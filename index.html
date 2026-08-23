@@ -639,7 +639,7 @@ const MAT_QUALITY = {
   "血泪": 2, "圣水": 2, "黑兽脂": 2, "羽毛": 2, "黄金釜": 2, "混沌爪": 2
 };
 // 版本号：每次功能/修复完成后递增（vX.Y.Z）
-const VERSION = "1.0.0";
+const VERSION = "1.0.1";
 // 设置默认值：隐藏技能石默认关闭，隐藏兽脚/通用掉落默认开启
 const DEFAULT_SETTINGS = {
   storm: true, useAct: true, autoOverflow: false, hideDisableBox: false,
@@ -1475,7 +1475,7 @@ function renderRegDense(list, grid){
     const m = list[i];
     const meta = metaOf(m[0]);
     const inv = m[1] || 0, act = useAct ? (m[3] || 0) : 0, need = m[2] || 0;
-    const rem = inv + act - need + includedGain(m[0]);
+    const rem = Math.round(inv + act - need + includedGain(m[0]));
     const qp = m[0] === "量子";
     const item = document.createElement("div");
     item.className = "dense-item";
@@ -1523,7 +1523,7 @@ function updRegRemain(list, i, root){
     span.className = "reg-remain " + (m[4] >= need ? "ok" : "lack");
     span.title = "Chaldea识别剩余：库存" + inv + " + 活动" + act + " - 需求" + need + " = " + m[4];
   } else {
-    const val = effInv - need + includedGain(m[0]);
+    const val = Math.round(effInv - need + includedGain(m[0]));
     span.textContent = fmt(val);
     span.className = "reg-remain " + (val >= 0 ? "ok" : "lack");
     span.title = "剩余 = 库存" + inv + (act ? " + 活动" + act : "") + " - 需求" + need +
