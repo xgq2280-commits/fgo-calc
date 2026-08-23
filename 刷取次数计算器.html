@@ -1324,11 +1324,13 @@ function actGain(aid, key){
   });
   return g;
 }
-// 所有「产出计入剩余」开关已开启的活动，其产出合计（用于常规材料页剩余）
+// 计入常规材料剩余的活动产出：当前显示的活动始终计入；其他活动仅当开关开启时计入
 function includedGain(key){
-  const inc = getSettings().actInclude || {};
+  const st = getSettings();
+  const inc = st.actInclude || {};
+  const cur = st.curAct || "final";
   let g = 0;
-  ACTIVITIES.forEach(a => { if (inc[a.id]) g += actGain(a.id, key); });
+  ACTIVITIES.forEach(a => { if (a.id === cur || inc[a.id]) g += actGain(a.id, key); });
   return g;
 }
 function toggleActMenu(){
@@ -1521,7 +1523,7 @@ function updRegRemain(list, i, root){
     span.textContent = fmt(val);
     span.className = "reg-remain " + (val >= 0 ? "ok" : "lack");
     span.title = "剩余 = 库存" + inv + (act ? " + 活动" + act : "") + " - 需求" + need +
-      (includedGain(m[0]) > 0 ? " + 已开启活动产出" + includedGain(m[0]) : "") + " = " + val;
+      (includedGain(m[0]) > 0 ? " + 活动产出" + includedGain(m[0]) : "") + " = " + val;
   }
 }
 
