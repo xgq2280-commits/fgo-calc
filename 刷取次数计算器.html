@@ -192,6 +192,7 @@
   .bar i{display:block; height:100%; width:0; background:linear-gradient(90deg,var(--gold2),var(--gold)); transition:width .3s;}
 
   footer{margin-top:30px; text-align:center; color:var(--muted); font-size:12px; line-height:2;}
+  footer .ver{display:inline-block; margin-top:6px; padding:2px 10px; border:1px solid var(--line); border-radius:10px; color:var(--gold); font-size:11px; font-variant-numeric:tabular-nums;}
 
   .overlay{
     position:fixed; inset:0; background:rgba(8,10,20,.72); backdrop-filter:blur(3px);
@@ -539,7 +540,8 @@
 
   <footer>
     刷取次数公式：材料需刷次 = ⌈(需求−库存) ÷ 掉率⌉；副本刷取次数 = 该副本全部材料需刷次的最高值。<br>
-    掉率旁按钮可切换 AP 效率（= 40AP ÷ 掉率，即在此柱刷 1 个该材料所需AP）；填库存与需求后看各材料需刷次数与"剩余"（剩余 = 库存 + 刷取次数×掉率），刷取次数可手动修改或用 ↺ 恢复自动；点击需刷数字可直接填入刷取次数；库存/需求/需刷/剩余列可点击排序。材料 AP 价值来自 fgo.wiki（2026-08）。
+    掉率旁按钮可切换 AP 效率（= 40AP ÷ 掉率，即在此柱刷 1 个该材料所需AP）；填库存与需求后看各材料需刷次数与"剩余"（剩余 = 库存 + 刷取次数×掉率），刷取次数可手动修改或用 ↺ 恢复自动；点击需刷数字可直接填入刷取次数；库存/需求/需刷/剩余列可点击排序。材料 AP 价值来自 fgo.wiki（2026-08）。<br>
+    <span class="ver" id="ver"></span>
   </footer>
 </div>
 
@@ -636,6 +638,8 @@ const MAT_QUALITY = {
   "胎毛": 2, "树根": 2, "鬼灯": 2, "马角": 2, "核心": 2, "甲虫像": 2, "金蛋": 2, "樱桃": 2, "煌星": 2,
   "血泪": 2, "圣水": 2, "黑兽脂": 2, "羽毛": 2, "黄金釜": 2, "混沌爪": 2
 };
+// 版本号：每次功能/修复完成后递增（vX.Y.Z）
+const VERSION = "1.0.0";
 // 设置默认值：隐藏技能石默认关闭，隐藏兽脚/通用掉落默认开启
 const DEFAULT_SETTINGS = {
   storm: true, useAct: true, autoOverflow: false, hideDisableBox: false,
@@ -1972,6 +1976,9 @@ function copyResult(){
   });
 }
 
+// 页脚版本号
+const verEl = document.getElementById("ver");
+if (verEl) verEl.textContent = "v" + VERSION;
 applySettings();
 build();
 buildReg();
