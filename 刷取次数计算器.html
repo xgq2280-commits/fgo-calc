@@ -318,12 +318,34 @@
   .modal .prog-name{font-size:13px; color:var(--muted); margin-bottom:12px;}
   .modal .prog-bar{height:10px; background:var(--panel2); border:1px solid var(--line); border-radius:6px; overflow:hidden;}
   .modal .prog-bar i{display:block; height:100%; width:0; background:linear-gradient(90deg,#e8b64c,#f5d68a); transition:width .25s;}
-  .actsel{display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted);}
-  .actsel select{
+  .actsel{position:relative; display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted);}
+  .actbtn{
     background:var(--panel2); border:1px solid var(--line); color:var(--text);
-    border-radius:8px; padding:6px 10px; font-size:13px; cursor:pointer;
+    border-radius:8px; padding:6px 12px; font-size:13px; cursor:pointer;
+    display:inline-flex; align-items:center; gap:6px;
   }
-  .actsel select:focus{outline:none; border-color:var(--gold);}
+  .actbtn:hover{border-color:var(--gold); color:var(--gold);}
+  .actbtn .arr{font-style:normal; font-size:10px; color:var(--muted);}
+  .actmenu{
+    position:absolute; top:calc(100% + 6px); left:0; z-index:60; min-width:280px;
+    background:var(--panel); border:1px solid var(--line); border-radius:10px;
+    box-shadow:0 8px 24px rgba(0,0,0,.45); padding:6px;
+  }
+  .actmenu-item{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    padding:9px 12px; border-radius:8px; cursor:pointer; font-size:13px;
+  }
+  .actmenu-item:hover{background:var(--panel2);}
+  .actmenu-item.current{color:var(--gold); font-weight:700;}
+  .actmenu-item .aname{flex:1;}
+  .actmenu-item .switch span:first-child{font-size:11px; color:var(--muted); font-weight:normal;}
+  /* 柱子战上方活动标题 */
+  .actbanner{
+    display:flex; align-items:baseline; gap:10px; margin:26px 0 14px;
+    border-bottom:1px solid var(--line); padding-bottom:10px;
+  }
+  .actbanner h2{font-size:24px; color:var(--gold); letter-spacing:8px; margin:0;}
+  .actbanner small{font-size:12px; color:var(--muted); letter-spacing:2px;}
   .section{margin-top:28px;}
   .section h2{
     font-size:16px; color:var(--gold); letter-spacing:3px; margin-bottom:12px;
@@ -412,11 +434,10 @@
 <div class="wrap">
   <header>
     <div class="header-left">
-      <div class="actsel" title="选择要规划的活动（目前仅开放终章）">
-        <label>活动选择</label>
-        <select id="activitySel" onchange="onActivityChange()">
-          <option value="final" selected>终章</option>
-        </select>
+      <div class="actsel" id="actSelBox" title="选择要规划的活动；开启某活动的「产出计入剩余」，该活动规划的刷取产出会计入其他活动与常规材料的剩余">
+        <label>活动</label>
+        <button class="actbtn" onclick="toggleActMenu()"><span id="actName">终章</span><i class="arr">▾</i></button>
+        <div class="actmenu" id="actMenu" style="display:none"></div>
       </div>
       <label class="switch" title="开启后，一次副本都不刷就已富余（有效库存≥需求）的材料不计入AP价值">
         <span>自动禁用溢出材料<small>富余材料不计AP价值</small></span>
@@ -469,6 +490,8 @@
       <div class="apple-grid" id="appleGrid"></div>
     </div>
   </div>
+
+  <div class="actbanner"><h2 id="curActTitle">终章</h2><small>柱子战刷取规划</small></div>
 
   <div class="grid" id="grid"></div>
 
@@ -617,7 +640,8 @@ const MAT_QUALITY = {
 const DEFAULT_SETTINGS = {
   storm: true, useAct: true, autoOverflow: false, hideDisableBox: false,
   hideFoot: true, hideQP: true, hideGems: false,
-  regShowAll: false, regView: "list"
+  regShowAll: false, regView: "list",
+  curAct: "final", actInclude: {}
 };
 // 御主等级 AP 上限（fgo.wiki 2026-08；国服最高180级，181-200 按180封顶）
 const AP_CAP_RULES = [
@@ -733,6 +757,7 @@ function applySettings(){
   const ao = document.getElementById("autoOverflow");
   if (ao) ao.checked = !!s.autoOverflow;
   applyRegUI();
+  applyActUI();
 }
 function toggleAutoOverflow(){
   const st = getSettings();
@@ -1279,8 +1304,67 @@ function sortPillar(card, d, col){
   recompute();
 }
 
-function onActivityChange(){
-  // 未来支持多个活动；目前仅「终章」，切换到其他活动时在此加载对应副本数据
+// ===== 活动管理：活动列表 + 产出计入剩余开关 =====
+// 活动数组（未来新增活动在此追加；终章数据来自 DUNGEONS）
+const ACTIVITIES = [{id: "final", name: "终章"}];
+function curActivity(){ return getSettings().curAct || "final"; }
+function setActivity(id){
+  const st = getSettings();
+  st.curAct = id;
+  localStorage.setItem(SET_KEY, JSON.stringify(st));
+  applyActUI();
+}
+// 某活动的刷取产出（按材料键汇总，终章 = 8 柱 runs×掉率）
+function actGain(aid, key){
+  if (aid !== "final") return 0;
+  let g = 0;
+  DUNGEONS.forEach(d => {
+    const m = d.mats.find(x => x[0] === key);
+    if (m) g += (d._runs || 0) * (m[1] || 0);
+  });
+  return g;
+}
+// 所有「产出计入剩余」开关已开启的活动，其产出合计（用于常规材料页剩余）
+function includedGain(key){
+  const inc = getSettings().actInclude || {};
+  let g = 0;
+  ACTIVITIES.forEach(a => { if (inc[a.id]) g += actGain(a.id, key); });
+  return g;
+}
+function toggleActMenu(){
+  const m = document.getElementById("actMenu");
+  m.style.display = m.style.display === "none" ? "" : "none";
+}
+function onActInc(aid){
+  const st = getSettings();
+  const inc = Object.assign({}, st.actInclude || {});
+  const cb = document.getElementById("actInc-" + aid);
+  inc[aid] = !!cb.checked;
+  st.actInclude = inc;
+  localStorage.setItem(SET_KEY, JSON.stringify(st));
+  // 常规材料页剩余依赖该开关，刷新
+  if (getSettings().regShowAll) buildReg();
+}
+function applyActUI(){
+  const s = getSettings();
+  const cur = s.curAct || "final";
+  const inc = s.actInclude || {};
+  const name = document.getElementById("actName");
+  const title = document.getElementById("curActTitle");
+  const menu = document.getElementById("actMenu");
+  const act = ACTIVITIES.find(a => a.id === cur);
+  if (name) name.textContent = act ? act.name : cur;
+  if (title) title.textContent = act ? act.name : cur;
+  if (menu) {
+    menu.innerHTML = ACTIVITIES.map(a =>
+      `<div class="actmenu-item ${a.id === cur ? "current" : ""}" onclick="setActivity('${a.id}')">` +
+      `<span class="aname">${a.name}</span>` +
+      `<label class="switch" onclick="event.stopPropagation()" title="开启后，该活动规划的刷取产出计入其他活动与常规材料的剩余">` +
+      `<span>产出计入剩余</span>` +
+      `<input type="checkbox" id="actInc-${a.id}" ${inc[a.id] ? "checked" : ""} onchange="onActInc('${a.id}')">` +
+      `<span class="slider"></span></label></div>`
+    ).join("");
+  }
 }
 
 function buildMatList(list, tbSel, cls){
@@ -1385,7 +1469,7 @@ function renderRegDense(list, grid){
     const m = list[i];
     const meta = metaOf(m[0]);
     const inv = m[1] || 0, act = useAct ? (m[3] || 0) : 0, need = m[2] || 0;
-    const rem = inv + act - need;
+    const rem = inv + act - need + includedGain(m[0]);
     const qp = m[0] === "量子";
     const item = document.createElement("div");
     item.className = "dense-item";
@@ -1433,10 +1517,11 @@ function updRegRemain(list, i, root){
     span.className = "reg-remain " + (m[4] >= need ? "ok" : "lack");
     span.title = "Chaldea识别剩余：库存" + inv + " + 活动" + act + " - 需求" + need + " = " + m[4];
   } else {
-    const val = effInv - need;
+    const val = effInv - need + includedGain(m[0]);
     span.textContent = fmt(val);
     span.className = "reg-remain " + (val >= 0 ? "ok" : "lack");
-    span.title = "剩余 = 库存" + inv + (act ? " + 活动" + act : "") + " - 需求" + need + " = " + val;
+    span.title = "剩余 = 库存" + inv + (act ? " + 活动" + act : "") + " - 需求" + need +
+      (includedGain(m[0]) > 0 ? " + 已开启活动产出" + includedGain(m[0]) : "") + " = " + val;
   }
 }
 
@@ -1834,7 +1919,21 @@ function recompute(){
   const gnEl = document.getElementById("grandNote");
   if (gnEl) gnEl.innerHTML =
     `预计掉落 <b>${Math.round(copperDrop)}</b> 铜苹果，折算约 <b>${copperEq}</b> 金苹果，因此最少仅需 <b>${minApples}</b> 苹果`;
+  refreshRegRemain();
   scheduleAutoSave();
+}
+
+// 常规材料页剩余依赖「已开启活动的产出」（随刷取次数变化），recompute 后刷新
+function refreshRegRemain(){
+  if (!getSettings().regShowAll) return;
+  if (getSettings().regView === "dense") {
+    renderRegDense(getAllMats(), document.getElementById("regDense"));
+  } else {
+    const tb = document.querySelector("#regTable tbody");
+    if (!tb) return;
+    const list = getAllMats();
+    list.forEach((_, i) => updRegRemain(list, i, tb));
+  }
 }
 
 function reEnable(){
