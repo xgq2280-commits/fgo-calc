@@ -1670,10 +1670,10 @@ function recompute(){
         title = "剩余 = 库存" + inv + (useAct ? " + 活动" + act : "") +
           " + 全柱共掉落" + dropDisp + "（" + parts.join("，") + "） - 需求" + need + "（期望值）";
       }
-      const val = effInv + drop;
+      const val = effInv + drop - need;
       m._remain = val;
       rem.textContent = m[0] === "量子" ? fmtNum(Math.round(val)) : Math.round(val);
-      rem.className = "rem " + (val >= need ? "ok" : "lack");
+      rem.className = "rem " + (val >= 0 ? "ok" : "lack");
       rem.title = title;
     });
 
