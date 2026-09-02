@@ -1529,7 +1529,7 @@ const MAT_QUALITY = {
   "血泪": 2, "圣水": 2, "黑兽脂": 2, "羽毛": 1, "黄金釜": 2, "混沌爪": 2
 };
 // 版本号：每次功能/修复完成后递增（vX.Y.Z）
-const VERSION = "1.10.10";
+const VERSION = "1.10.11";
 // 设置默认值：隐藏特殊/技能/再临/其他 默认关闭（五类常规材料栏常显，开启后隐藏对应分类的掉落行与页签）
 const DEFAULT_SETTINGS = {
   storm: true, useAct: true, autoOverflow: true, hideDisableBox: false,
@@ -4590,8 +4590,10 @@ function recompute(){
       const rateVal = tr.querySelector(".rateval");
       const isOvr = (getRateOverrides()[d.id] || {})[m[0]] !== undefined; // 用户已自定义掉率
       if (d.lottery) {
-        // 无限池：每箱数量（非百分比，不支持自定义）
-        const numTxt = m[0] === "量子" ? fmtNum(m[1]) : (fmt1(m[1]) + (suffix ? " " + suffix : " 个"));
+        // 无限池：每箱数量（非百分比，不支持自定义）；量子按 M 单位存储（2.0=200万 QP），显示带 M 后缀避免误读为个位数
+        const numTxt = m[0] === "量子"
+          ? (m[1] % 1 === 0 ? String(m[1]) : String(+(m[1]).toFixed(2))) + "M"
+          : (fmt1(m[1]) + (suffix ? " " + suffix : " 个"));
         rateVal.textContent = numTxt;
         rateVal.className = "rateval";
         rateVal.title = "每箱获得 " + numTxt + (m[0] === "量子" ? " QP" : "");
