@@ -260,6 +260,13 @@
   td{padding:6px 10px; border-bottom:1px solid rgba(42,47,74,.5); vertical-align:middle;}
   /* 数据列（除材料列外）居中 */
   #grid table th:not(:first-child), #grid table td:not(:first-child){text-align:center;}
+  /* 副本卡片表：固定列布局，避免内容（禁用文字/AP链接/溢出标签等）变化导致列宽抖动位移 */
+  #grid table{table-layout:fixed;}
+  #grid table th:first-child{width:30%;}
+  #grid table th:nth-child(2){width:14%;}
+  #grid table th:nth-child(3),#grid table th:nth-child(4){width:13%;}
+  #grid table th:nth-child(5),#grid table th:nth-child(6){width:15%;}
+  #grid table td.material{overflow-wrap:break-word; word-break:break-word;}
   .reg-card table th:nth-child(n+2), .reg-card table td:nth-child(n+2){text-align:center;}
   tr:last-child td{border-bottom:none;}
   td.material{font-weight:600; line-height:1.5;}
@@ -292,9 +299,20 @@
   td.remain .rem.lack{color:var(--red); font-weight:700;}
   th .ratetoggle{
     background:transparent; border:1px solid var(--blue); color:var(--blue);
-    border-radius:5px; padding:1px 7px; font-size:11px; cursor:pointer; margin-left:4px;
+    border-radius:5px; padding:2px 0; font-size:11px; cursor:pointer; margin-left:4px;
+    width:60px; box-sizing:border-box; text-align:center; white-space:nowrap;
   }
   th .ratetoggle:hover{background:rgba(91,141,239,.15);}
+  /* 需求列切换按钮（需求 ↔ 追加需求，需在设置开启「开启追加需求」后才可点击切换） */
+  th .needtog{
+    background:transparent; border:1px solid var(--blue); color:var(--blue);
+    border-radius:5px; padding:2px 0; font-size:11px; margin-left:4px;
+    width:66px; box-sizing:border-box; text-align:center; white-space:nowrap;
+  }
+  th .needtog.off{opacity:.45; cursor:default; border-color:var(--line); color:var(--muted);}
+  th .needtog:not(.off){cursor:pointer;}
+  th .needtog:not(.off):hover{background:rgba(91,141,239,.15);}
+  th .needtog.on{border-color:var(--gold); color:var(--gold); background:rgba(212,175,55,.1);}
   input[type="number"]{
     width:64px; background:var(--panel2); border:1px solid var(--line); color:var(--text);
     border-radius:6px; padding:4px 6px; font-size:13px; text-align:right;
@@ -320,6 +338,17 @@
 
   footer{margin-top:30px; text-align:center; color:var(--muted); font-size:12px; line-height:2;}
   header h1 .ver{display:inline-block; margin-left:10px; padding:2px 9px; border:1px solid var(--line); border-radius:10px; color:var(--gold2); font-size:12px; letter-spacing:0; font-variant-numeric:tabular-nums; cursor:pointer; vertical-align:middle;}
+  header h1 .h1txt{user-select:none; cursor:default;}
+  /* 版本更新未读提示：版本号闪烁，单击查看更新公告；看过一次后恢复常态（点击变回长按查看） */
+  header h1 .ver.unread{color:var(--gold); border-color:var(--gold); animation:verFlash 1.2s ease-in-out infinite;}
+  @keyframes verFlash{0%,100%{opacity:1;} 50%{opacity:.3; box-shadow:0 0 8px rgba(212,175,55,.55);}}
+  /* 版本更新记录弹窗 */
+  .verlog{max-height:46vh; overflow:auto; text-align:left;}
+  .verlog-item{border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-bottom:10px; background:var(--panel2);}
+  .verlog-head{font-size:14px; font-weight:700; color:var(--gold2); margin-bottom:6px;}
+  .verlog-date{font-size:11px; color:var(--muted); font-weight:400; margin-left:8px;}
+  .verlog-notes{margin:0; padding-left:18px; font-size:12px; color:var(--text); line-height:1.8;}
+  .verlog-grp{font-size:12px; font-weight:700; color:var(--gold2); margin:8px 0 2px;}
 
   .overlay{
     position:fixed; inset:0; background:rgba(8,10,20,.72); backdrop-filter:blur(3px);
@@ -694,7 +723,7 @@
       <input type="checkbox" id="storm" style="display:none">
       <input type="checkbox" id="useAct" style="display:none">
     </div>
-    <h1>活动获取规划计算<span class="ver" id="ver" onclick="fbDevClicks()"></span></h1>
+    <h1><span class="h1txt">活动获取规划计算</span><span class="ver" id="ver" onclick="fbDevClicks()"></span></h1>
     <p>刷取次数：默认 0，可手动输入，或点击材料<b>需刷</b>数字自动填入。<br>
        AP 价值：每局柱子产出的材料，折算成在<b>普通自由本</b>刷取所需 AP 的总和 = Σ(掉率 × 材料最高效率AP)。点击材料旁的蓝色 AP 值可跳到对应副本。</p>
     <div class="topright">
@@ -818,35 +847,35 @@
       </div>
       <div class="tabpane active" id="pane1">
         <table id="regTable">
-          <thead><tr><th>材料-地铺（AP/个)</th><th>需求</th><th>库存</th><th>活动</th><th>剩余</th></tr></thead>
+          <thead><tr><th>材料-地铺（AP/个)</th><th><button type="button" class="needtog off" title="在设置中开启「开启追加需求」后，可在此切换：需求列 ↔ 追加需求列（追加需求不影响需求数据，一并计入需求）">需求</button></th><th>库存</th><th>活动</th><th>剩余</th></tr></thead>
           <tbody></tbody>
         </table>
         <div class="densegrid" id="regDense" style="display:none"></div>
       </div>
       <div class="tabpane" id="pane2">
         <table id="specTable">
-          <thead><tr><th>特殊材料</th><th>需求</th><th>库存</th><th>活动</th><th>剩余</th></tr></thead>
+          <thead><tr><th>特殊材料</th><th><button type="button" class="needtog off" title="在设置中开启「开启追加需求」后，可在此切换：需求列 ↔ 追加需求列">需求</button></th><th>库存</th><th>活动</th><th>剩余</th></tr></thead>
           <tbody></tbody>
         </table>
         <div class="densegrid" id="specDense" style="display:none"></div>
       </div>
       <div class="tabpane" id="pane3">
         <table id="gemTable">
-          <thead><tr><th>技能石</th><th>需求</th><th>库存</th><th>活动</th><th>剩余</th></tr></thead>
+          <thead><tr><th>技能石</th><th><button type="button" class="needtog off" title="在设置中开启「开启追加需求」后，可在此切换：需求列 ↔ 追加需求列">需求</button></th><th>库存</th><th>活动</th><th>剩余</th></tr></thead>
           <tbody></tbody>
         </table>
         <div class="densegrid" id="gemDense" style="display:none"></div>
       </div>
       <div class="tabpane" id="pane4">
         <table id="regsTable">
-          <thead><tr><th>再临棋子</th><th>需求</th><th>库存</th><th>活动</th><th>剩余</th></tr></thead>
+          <thead><tr><th>再临棋子</th><th><button type="button" class="needtog off" title="在设置中开启「开启追加需求」后，可在此切换：需求列 ↔ 追加需求列">需求</button></th><th>库存</th><th>活动</th><th>剩余</th></tr></thead>
           <tbody></tbody>
         </table>
         <div class="densegrid" id="regsDense" style="display:none"></div>
       </div>
       <div class="tabpane" id="pane5">
         <table id="otherTable">
-          <thead><tr><th>其他材料</th><th>需求</th><th>库存</th><th>活动</th><th>剩余</th></tr></thead>
+          <thead><tr><th>其他材料</th><th><button type="button" class="needtog off" title="在设置中开启「开启追加需求」后，可在此切换：需求列 ↔ 追加需求列">需求</button></th><th>库存</th><th>活动</th><th>剩余</th></tr></thead>
           <tbody></tbody>
         </table>
         <div class="densegrid" id="otherDense" style="display:none"></div>
@@ -1529,7 +1558,7 @@ const MAT_QUALITY = {
   "血泪": 2, "圣水": 2, "黑兽脂": 2, "羽毛": 1, "黄金釜": 2, "混沌爪": 2
 };
 // 版本号：每次功能/修复完成后递增（vX.Y.Z）
-const VERSION = "1.10.11";
+const VERSION = "1.10.16";
 // 设置默认值：隐藏特殊/技能/再临/其他 默认关闭（五类常规材料栏常显，开启后隐藏对应分类的掉落行与页签）
 const DEFAULT_SETTINGS = {
   storm: true, useAct: true, autoOverflow: true, hideDisableBox: false,
@@ -1565,6 +1594,29 @@ const AP_CAP_RULES = [
   [187, 192, 150], [193, 196, 151], [197, 200, 152]
 ];
 const AUTO_KEY = "fgo_pillar_autosave";
+// ===== 追加需求列：在不改动需求列（Chaldea 规划）的前提下额外想刷的量，一并计入需求 ====
+// 追加需求按材料键独立持久化（REDUND_KEY），不随存档槽/autoSave 覆盖，关闭「开启追加需求」开关也不清除数据
+const REDUND_KEY = "fgo_pillar_redund_v1";
+let REDUND = {}; // 材料键 -> 追加需求数值
+function loadRedund(){
+  REDUND = {};
+  try {
+    const o = JSON.parse(localStorage.getItem(REDUND_KEY) || "{}");
+    Object.keys(o).forEach(k => { const n = Math.round(o[k]); if (n > 0) REDUND[k] = n; });
+  } catch(e){}
+}
+function saveRedund(){ try { localStorage.setItem(REDUND_KEY, JSON.stringify(REDUND)); } catch(e){} }
+function redundOf(k){ return REDUND[k] || 0; }
+function setRedund(k, v){
+  const n = Math.max(0, Math.round(parseFloat(v)) || 0);
+  if (n > 0) REDUND[k] = n; else delete REDUND[k];
+  saveRedund();
+}
+// 总需求 = 源需求 + 追加需求（计算一律用总需求；开关只控制 UI 是否展示追加需求列）
+function totalNeedOf(k){
+  const s = matSrc(k);
+  return ((s && s.m) ? (s.m[s.need] || 0) : 0) + redundOf(k);
+}
 
 // 职介图标（fgo.wiki 金卡样式）
 const CLASS_ICONS = {
@@ -1737,7 +1789,8 @@ function openSettings(){
     `<label class="set-item" title="隐藏再临分类的掉落行与页签（棋子/金像）"><input type="checkbox" id="setHideRegs" ${s.hideRegs?"checked":""}><span>隐藏再临</span></label>` +
     `<label class="set-item" title="隐藏其他分类的掉落行与页签（兽之足迹/星冠结晶/友情点）"><input type="checkbox" id="setHideOther" ${s.hideOther?"checked":""}><span>隐藏其他</span></label>` +
     `<label class="set-item" title="开启时当前活动刷取产出无条件计入下方材料；关闭后当前活动也需开启活动开关才计入"><input type="checkbox" id="setCurActGain" ${s.curActGain !== false?"checked":""}><span>当前活动资源计入</span></label>` +
-    `<label class="set-item" title="开启后，一次副本都不刷就已富余（有效库存≥需求）的材料不计入AP价值"><input type="checkbox" id="setAutoOverflow" ${s.autoOverflow?"checked":""}><span>自动禁用溢出材料</span></label>` +
+    `<label class="set-item" title="副本中已富余的材料不计入 AP 价值（便于判断该副本是否值得刷）。富余口径与剩余一致：库存+活动+已计入的刷取产出 ≥ 需求（含追加需求）；未填需求（0）也视为富余剔除"><input type="checkbox" id="setAutoOverflow" ${s.autoOverflow?"checked":""}><span>自动禁用溢出材料</span></label>` +
+    `<label class="set-item" title="开启后可以将需求列切换为追加需求列：追加需求不影响需求列的数据，一并算入需求（适合需求来自Chaldea规划、又想额外多刷的情况）"><input type="checkbox" id="setRedundant" ${s.redundEnabled?"checked":""}><span>开启追加需求</span></label>` +
     `</div>` +
     `<button class="mclose" id="setClose">关闭</button>`
   );
@@ -1759,6 +1812,16 @@ function openSettings(){
   bind("setHideOther", "hideOther");
   bind("setCurActGain", "curActGain");
   bind("setAutoOverflow", "autoOverflow");
+  // 「开启追加需求」总开关：切换后同步各表头按钮可用性 + 重建列表行（显示需求或追加需求值）+ 刷新副本卡输入与计算
+  document.getElementById("setRedundant").addEventListener("change", function(){
+    const st = getSettings();
+    st.redundEnabled = this.checked;
+    localStorage.setItem(SET_KEY, JSON.stringify(st));
+    applyRedundUI();
+    buildReg(); buildGems(); buildRegs(); buildOthers(); buildSpec();
+    document.querySelectorAll("#grid .card table").forEach(refreshNeedInputs);
+    recompute();
+  });
   document.getElementById("setClose").addEventListener("click", closeModal);
 }
 
@@ -1796,6 +1859,8 @@ function openSurvey(){
 // 开发者设置：连续点击 5 次版本号展开/收起「反馈提交地址」输入栏（发布版用户不可见，无悬停提示）
 let _fbDevCount = 0, _fbDevTimer = null;
 function fbDevClicks(){
+  // 版本更新未读：单击先看更新公告（看过即标记已读并恢复常态），不计入开发者连点
+  if (verAnnounceUnread()) { showVerAnnounce(); return; }
   _fbDevCount++;
   if (_fbDevTimer) clearTimeout(_fbDevTimer);
   _fbDevTimer = setTimeout(() => { _fbDevCount = 0; }, 1500); // 1.5 秒内连续点击才累计
@@ -3194,6 +3259,7 @@ function rebuildGrid(){
   if (!grid) return;
   grid.innerHTML = "";
   build();
+  applyRedundUI(); // 卡片重建后恢复「开启追加需求」按钮状态
 }
 // 关闭活动菜单
 function closeActMenu(){
@@ -3440,6 +3506,7 @@ function openRegEdit(k){
     `<div class="regedit-field"><label>需求</label><input type="${qp ? "text" : "number"}" min="0" id="regEditNeed" value="${fmt(need)}"></div>` +
     `<div class="regedit-field"><label>库存</label><input type="${qp ? "text" : "number"}" min="0" id="regEditInv" value="${fmt(inv)}"></div>` +
     `<div class="regedit-field"><label>活动</label><input type="${qp ? "text" : "number"}" min="0" id="regEditAct" value="${fmt(act)}"></div>` +
+    (getSettings().redundEnabled ? `<div class="regedit-field"><label>追加需求</label><input type="${qp ? "text" : "number"}" min="0" id="regEditRedund" title="追加需求：额外想刷的量，一并计入需求，不影响上方需求数据" value="${fmt(redundOf(k))}"></div>` : "") +
     `</div>` +
     `<button class="cdedit-ok" onclick="saveRegEdit('${k}')">确认</button>` +
     `<button class="cdedit-x" title="关闭" onclick="closeModal()">✕</button>` +
@@ -3469,6 +3536,8 @@ function saveRegEdit(k){
   setRegField(k, "need", get("regEditNeed"));
   setRegField(k, "inv", get("regEditInv"));
   setRegField(k, "act", get("regEditAct"));
+  const rEl = document.getElementById("regEditRedund");
+  if (rEl) setRedund(k, get("regEditRedund")); // 开启追加需求时弹窗内可编辑追加需求
   closeModal();
   buildReg(); buildGems(); buildRegs(); buildOthers(); buildSpec();
 }
@@ -3849,20 +3918,67 @@ function applyActUI(){
   renderCustomDrops();
 }
 
+// ===== 需求↔追加需求 列模式（每张表/卡片独立）=====
+// 需求列显示「需求」数据（Chaldea/用户填写的原始需求）；切到「追加需求」后该列显示追加需求值（用户额外想刷的量）。
+// 两者数据并存互不影响：需求不因切换而丢失，计算一律用 需求+追加需求 总需求（追加需求不影响需求列输入）。
+function applyRedundUI(){
+  const en = !!getSettings().redundEnabled;
+  document.querySelectorAll("th .needtog").forEach(b => {
+    const tb = b.closest("table");
+    if (en) {
+      const rm = tb && tb.dataset.needMode === "redund";
+      b.classList.remove("off");
+      b.classList.toggle("on", !!rm);
+      b.textContent = rm ? "追加需求" : "需求";
+      b.title = "点击切换：需求列 ↔ 追加需求列（追加需求不影响需求列数据，一并计入需求计算）";
+    } else {
+      if (tb) tb.dataset.needMode = "need"; // 关闭总开关时强制回到需求列
+      b.classList.add("off"); b.classList.remove("on"); b.textContent = "需求";
+      b.title = "在设置中开启「开启追加需求」后，可在此切换：需求列 ↔ 追加需求列";
+    }
+  });
+}
+// 某表当前是否显示追加需求列（该表 dataset 由表头按钮维护）
+function needModeOf(tb){ return !!(tb && tb.dataset.needMode === "redund"); }
+// 把表中所有需求输入框刷新为当前显示列的值（需求源值 or 追加需求值）；只读框（南海配方消耗）跳过
+function refreshNeedInputs(tb){
+  if (!tb) return;
+  const rm = needModeOf(tb);
+  tb.querySelectorAll("input[data-f=need]").forEach(inp => {
+    const k = inp.dataset.key;
+    if (!k || inp.readOnly) return;
+    const s = matSrc(k);
+    const v = rm ? redundOf(k) : (s ? (s.m[s.need] || 0) : 0);
+    inp.value = k === "量子" ? fmtNum(v) : v;
+  });
+}
+// 需求列切换按钮点击（事件委托）：只切换按钮所在表/卡片
+document.addEventListener("click", e => {
+  const b = e.target && e.target.closest ? e.target.closest(".needtog") : null;
+  if (!b || b.classList.contains("off")) return;
+  const tb = b.closest("table");
+  if (!tb) return;
+  tb.dataset.needMode = needModeOf(tb) ? "need" : "redund";
+  applyRedundUI();
+  refreshNeedInputs(tb);
+  recompute();
+});
 function buildMatList(list, tbSel, cls){
   const tb = document.querySelector(tbSel);
   tb.innerHTML = "";
+  const rmShow = needModeOf(tb.parentElement); // 该表当前显示需求还是追加需求列
   const order = matListOrder(cls, list);
   order.forEach(i => {
     const m = list[i];
     const meta = metaOf(m[0]);
     const qp = m[0] === "量子";
+    const needShow = rmShow ? redundOf(m[0]) : (m[2] || 0); // 追加需求列模式显示追加需求值，否则显示需求
     const tr = document.createElement("tr");
     tr.innerHTML =
       `<td class="material"><span class="mwrap"><img class="icon" src="${meta.img}" alt="" onerror="this.remove()" onclick="openRegEdit('${m[0]}')">` +
       `<span class="mname">${dispName(m[0])}</span></span>` +
       `<small><a class="aplink" target="_blank" rel="noopener">—</a></small></td>` +
-      `<td><input type="${qp ? "text" : "number"}" min="0" class="narrow ${cls}-need" data-i="${i}" value="${qp ? fmtNum(m[2]||0) : (m[2]||0)}"></td>` +
+      `<td><input type="${qp ? "text" : "number"}" min="0" class="narrow ${cls}-need" data-i="${i}" data-f="need" data-key="${m[0]}" value="${qp ? fmtNum(needShow) : needShow}"></td>` +
       `<td><input type="${qp ? "text" : "number"}" min="0" class="narrow ${cls}-inv" data-i="${i}" value="${qp ? fmtNum(m[1]||0) : (m[1]||0)}"></td>` +
       `<td><input type="${qp ? "text" : "number"}" min="0" class="narrow ${cls}-act" data-i="${i}" value="${qp ? fmtNum(m[3]||0) : (m[3]||0)}"></td>` +
       `<td><span class="reg-remain" data-i="${i}">—</span></td>`;
@@ -3922,6 +4038,13 @@ function buildMatList(list, tbSel, cls){
        const m = list[i];
        const qp = m[0] === "量子";
        const v = qp ? Math.max(0, fmtParse(inp.value)) : Math.max(0, parseInt(inp.value) || 0);
+       if (needModeOf(tb.parentElement)) {
+        // 追加需求列模式：写入追加需求（需求列原数据不动）；追加需求影响全表剩余 → 全行重算剩余 + 需刷
+        setRedund(m[0], v);
+        for (let j = 0; j < list.length; j++) updRegRemain(list, j, tb);
+        recompute();
+        return;
+       }
        if (isCommonKey(m[0])) { setCommon(m[0], "need", v); syncInputs(); recompute(); }
        else if (m.src && m.src.need === 5) { m.src.m[5] = v; m[2] = v; syncInputs(); recompute(); } // 柱子材料：写回柱子页联动
        else if (m.src) { m.src.m[2] = v; m[2] = v; }
@@ -3929,7 +4052,7 @@ function buildMatList(list, tbSel, cls){
        updRegRemain(list, i, tb);
      });
      if (list[i][0] === "量子") inp.addEventListener("blur", () => {
-       inp.value = fmtNum(list[i][2] || 0);
+       inp.value = fmtNum(needModeOf(tb.parentElement) ? redundOf(list[i][0]) : (list[i][2] || 0));
      });
    });
 }
@@ -3963,20 +4086,20 @@ function getAllMats(){
   });
 }
 
-// 常规材料页剩余（与 updRegRemain / renderRegDense 一致）：库存 + 活动 − 需求 + 当前活动产出
+// 常规材料页剩余（与 updRegRemain / renderRegDense 一致）：库存 + 活动 − 总需求（需求+追加需求） + 当前活动产出
 function remOf(m){
   const useAct = getSettings().useAct !== false;
-  return Math.round((m[1]||0) + (useAct ? (m[3]||0) : 0) - (m[2]||0) + includedGain(m[0]));
+  return Math.round((m[1]||0) + (useAct ? (m[3]||0) : 0) - ((m[2]||0) + redundOf(m[0])) + includedGain(m[0]));
 }
 // 材料悬停提示：库存 / 活动（Chaldea识别）/ 各活动规划产出（活动名+数字，如「终章 262」）/ 需求 / 剩余
 function regTooltip(m, chaldeaRem){
   const useAct = getSettings().useAct !== false;
-  const inv = m[1]||0, need = m[2]||0, act = useAct ? (m[3]||0) : 0;
+  const inv = m[1]||0, need = m[2]||0, redund = redundOf(m[0]), act = useAct ? (m[3]||0) : 0;
   const parts = ["库存 " + inv];
   if (act > 0) parts.push("活动 " + act);
   const fmt = m[0] === "量子" ? fmtNum : (v => v);
   gainDetail(m[0]).forEach(x => parts.push(x.name + " " + fmt(Math.round(x.gain))));
-  parts.push("需求 " + need);
+  parts.push(redund > 0 ? "需求 " + (need + redund) + "（含追加需求 " + redund + "）" : "需求 " + need);
   parts.push("剩余 " + (chaldeaRem !== undefined ? chaldeaRem + "（Chaldea识别）" : remOf(m)));
   return dispName(m[0]) + "：" + parts.join("，");
 }
@@ -4015,7 +4138,7 @@ function renderRegDense(list, grid, cls){
   idx.forEach(i => {
     const m = list[i];
     const meta = metaOf(m[0]);
-    const inv = m[1] || 0, act = useAct ? (m[3] || 0) : 0, need = m[2] || 0;
+    const inv = m[1] || 0, act = useAct ? (m[3] || 0) : 0, need = (m[2] || 0) + redundOf(m[0]);
     const rem = Math.round(inv + act - need + includedGain(m[0]));
     const qp = m[0] === "量子";
     const item = document.createElement("div");
@@ -4125,7 +4248,7 @@ function updRegRemain(list, i, root){
   if (!span) return;
   const useAct = getSettings().useAct !== false;
   const effInv = (m[1]||0) + (useAct ? (m[3]||0) : 0);
-  const inv = m[1]||0, act = useAct ? (m[3]||0) : 0, need = m[2]||0;
+  const inv = m[1]||0, act = useAct ? (m[3]||0) : 0, need = (m[2]||0) + redundOf(m[0]);
   const fmt = m[0] === "量子" ? fmtNum : (v => v);
   if (m[4] != null) {
     span.textContent = fmt(m[4]);
@@ -4284,7 +4407,7 @@ function build(){
     thead.innerHTML = `<tr><th>${(d.lottery || d.recipe) ? "材料" : "材料-地铺（AP/个)"}</th>` +
       (d.lottery ? `<th>每箱</th>` : d.recipe ? `<th>掉率</th>` : `<th><button class="ratetoggle" title="切换显示：掉率 或 AP效率（AP效率=40AP÷掉率）">掉率</button></th>`) +
       `<th class="sortable" data-col="inv">库存<span class="sind"></span></th>` +
-      `<th class="sortable" data-col="need">需求<span class="sind"></span></th>` +
+      `<th><button type="button" class="needtog off" title="在设置中开启「开启追加需求」后，可在此切换：需求列 ↔ 追加需求列">需求</button></th>` +
       `<th class="sortable" data-col="runs">需刷<span class="sind"></span></th>` +
       `<th class="sortable" data-col="remain">剩余<span class="sind"></span></th></tr>`;
     table.appendChild(thead);
@@ -4344,17 +4467,26 @@ function build(){
       const tdNeed = document.createElement("td");
       const needIn = document.createElement("input");
       needIn.type = isQp ? "text" : "number"; needIn.min = "0"; needIn.step = "1"; needIn.className = "narrow";
+      needIn.dataset.f = "need"; needIn.dataset.key = m[0];
       // 90++ 卡消耗货币（肉/菜/海鲜）：需求 = 3 大组配方总消耗，只读纯文本（随配方换取次数自动更新）
       const costShort = d.id === "Nanhai-909" ? COST_KEY[m[0]] : undefined;
+      const rmCard = needModeOf(table); // 该卡片当前需求列显示需求还是追加需求
       if (costShort !== undefined) {
         needIn.readOnly = true;
         needIn.classList.add("cost-need");
         needIn.title = "配方总消耗（3 大组 12 小组换取次数×配方消耗自动合计）；随配方换取次数自动更新，不可手动修改";
       } else {
-        needIn.value = isQp ? fmtNum(srcInv ? (srcInv.m[srcInv.need] || 0) : (m[5] || 0)) : (srcInv ? (srcInv.m[srcInv.need] || 0) : (m[5] || 0));
+        const nv = rmCard ? redundOf(m[0]) : (srcInv ? (srcInv.m[srcInv.need] || 0) : (m[5] || 0));
+        needIn.value = isQp ? fmtNum(nv) : nv;
       }
       needIn.addEventListener("input", () => {
         const v = isQp ? Math.max(0, fmtParse(needIn.value)) : Math.max(0, Math.round(parseFloat(needIn.value) || 0));
+        if (needModeOf(table)) {
+          if (costShort !== undefined) return; // 配方消耗行只读，不在卡片内填追加需求
+          setRedund(m[0], v); // 追加需求列模式：写入追加需求，需求列数据不动
+          recompute();
+          return;
+        }
         if (isCommonKey(m[0])) { setCommon(m[0], "need", v); syncInputs(); }
         else if (srcInv && srcInv.need === 5) { srcInv.m[5] = v; syncInputs(); } // 柱子材料：写回柱子页联动
         else if (srcInv) { srcInv.m[srcInv.need] = v; }
@@ -4362,7 +4494,9 @@ function build(){
         recompute();
       });
       if (isQp) needIn.addEventListener("blur", () => {
-        needIn.value = fmtNum((isCommonKey(m[0]) ? commonOf(m[0]).need : ((srcInv ? srcInv.m[srcInv.need] : m[5]) || 0)));
+        needIn.value = fmtNum(needModeOf(table)
+          ? redundOf(m[0])
+          : (isCommonKey(m[0]) ? commonOf(m[0]).need : ((srcInv ? srcInv.m[srcInv.need] : m[5]) || 0)));
       });
       tdNeed.appendChild(needIn);
       tr.appendChild(tdNeed);
@@ -4547,7 +4681,7 @@ function recompute(){
       // 缺口 = 需求 - 库存 - 活动获取(Chaldea) - 其他已计入活动的网页刷取产出
       // 需刷口径与剩余一致（剩余=库存+活动+全部计入产出-需求）；本副本已刷产出不扣，保证点击需刷填入后剩余≈0
       // 修复 v1.6.8：此前需刷未扣网页刷取产出，开启其他活动并设刷取次数后需刷偏大（如髓液 80586 产出未计入）
-      const srcNeed = (srcInv ? srcInv.m[srcInv.need] : m[5]) || 0;
+      const srcNeed = ((srcInv ? srcInv.m[srcInv.need] : m[5]) || 0) + redundOf(m[0]); // 总需求 = 源需求 + 追加需求
       const srcInvV = (srcInv ? srcInv.m[srcInv.inv] : m[4]) || 0;
       const srcAct = (srcInv ? srcInv.m[srcInv.inv === 4 ? 6 : 3] : m[6]) || 0;
       // 本副本当前刷取次数：直接从输入框读取（d._runs 在本循环后才赋值，用它会读到上一轮残留值导致 ownGain 算错、需刷被错误扣减变小）
@@ -4659,7 +4793,14 @@ function recompute(){
           linkEl.textContent = "≈" + cm.ap.toFixed(2) + " AP/个 ↗";
           linkEl.href = cm.url || "#";
           linkEl.title = "普通自由本最高效率：" + cm.stage + (cm.cost === 40 ? "（进入需40AP·风暴罐）" : "（进入" + cm.cost + "AP）");
-          const overflow = autoOverflow && (m[5]||0) > 0 && ((m[4]||0) + (useAct ? (m[6]||0) : 0)) >= (m[5]||0);
+          // 溢出判定与「剩余」口径完全一致：库存 + Chaldea活动(useAct时) + 已计入活动的刷取产出 ≥ 需求 + 追加需求 → 富余，剔除其AP价值
+          const srcI2 = matSrc(m[0]);
+          const c2 = isCommonKey(m[0]) ? commonOf(m[0]) : null;
+          const oN = c2 ? (c2.need || 0) : (srcI2 ? (srcI2.m[srcI2.need] || 0) : (m[5] || 0));
+          const oV = c2 ? (c2.inv || 0) : (srcI2 ? (srcI2.m[srcI2.inv] || 0) : (m[4] || 0));
+          const oA = c2 ? (c2.act || 0) : (srcI2 ? (srcI2.m[srcI2.inv === 4 ? 6 : 3] || 0) : (m[6] || 0));
+          const oGain = includedGain(m[0]);
+          const overflow = autoOverflow && (oV + (useAct ? oA : 0) + oGain) >= (oN + redundOf(m[0]));
           tagEl.textContent = (cm.cost === 40 ? "·风暴罐" : "") + (overflow ? "·溢出" : "");
           if (overflow) {
             linkEl.title += "（自动禁用：不刷也已富余，不计入AP价值）";
@@ -4704,17 +4845,19 @@ function recompute(){
       const c = isCommon ? commonOf(m[0]) : null;
       const srcM = matSrc(m[0]); // 共享数据源（方舟材料联动柱子/技能石/常规材料）
       const inv = c ? c.inv : (srcM ? (srcM.m[srcM.inv] || 0) : (m[4]||0));
-      const need = c ? c.need : (srcM ? (srcM.m[srcM.need] || 0) : (m[5]||0));
+      const needBase = c ? c.need : (srcM ? (srcM.m[srcM.need] || 0) : (m[5]||0));
+      const need = needBase + redundOf(m[0]); // 总需求 = 源需求 + 追加需求（与需刷/常规材料口径一致）
       const act = c ? c.act : (srcM ? (srcM.m[srcM.inv === 4 ? 6 : 3] || 0) : (m[6]||0));
       const effInv = inv + (useAct ? act : 0);
       // 剩余统一遵循下方常规材料口径：库存 + 活动获取 + 全部计入活动的刷取产出 - 需求
       // （当前活动无条件计入 / 已开启活动计入；「当前活动资源计入」关闭后当前活动也按开关）
       // → 已开启活动之间切换数据一致；未开启活动比已开启多出该活动停留当页的产出
       // tooltip 显示「刷取产出」按活动拆解（活动名 + 数字，如：终章 262 / 物资 147）
+      const redundN = redundOf(m[0]);
       const gd = gainDetail(m[0]);
       const drop = gd.reduce((s, x) => s + x.gain, 0);
       const fmtDrop = v => m[0] === "量子" ? fmtNum(Math.round(v)) : Math.round(v);
-      const tl = ["剩余 = 库存" + inv + (useAct ? " + 活动" + act : "") + " + 刷取产出" + fmtDrop(drop) + " - 需求" + need];
+      const tl = ["剩余 = 库存" + inv + (useAct ? " + 活动" + act : "") + " + 刷取产出" + fmtDrop(drop) + " - 需求" + need + (redundN > 0 ? "（含追加需求 " + redundN + "）" : "")];
       gd.forEach(x => tl.push(x.name + " " + fmtDrop(x.gain)));
       if (!gd.length) tl.push("（无计入活动的刷取产出）");
       const title = tl.join("\n");
@@ -4838,7 +4981,12 @@ function refreshRegRemain(){
 
 function reEnable(){
   if (!confirm("是否要解除当前所有材料的AP价值禁用？")) return;
-  DUNGEONS.forEach(d => d.mats.forEach(m => m[3] = false));
+  // 重置全部副本数据（终章8柱/方舟/南海/冠位戴冠战各职阶/80586）的禁用标记 m[3]；此前只清 DUNGEONS 导致其他活动禁用无法解除
+  const reset = arr => (arr || []).forEach(d => { if (d && Array.isArray(d.mats)) d.mats.forEach(m => { if (Array.isArray(m)) m[3] = false; }); });
+  [DUNGEONS, ARK_DUNGEONS, NANHAI_DUNGEONS, NANHAI_RECIPE_DUNGEONS,
+   CROWN_CAST_DUNGEONS, CROWN_CAST_DUNGEONS_NO_MANA, CROWN_SABER_DUNGEONS, CROWN_BERSERKER_DUNGEONS,
+   CROWN_ARCHER_DUNGEONS, CROWN_LANCER_DUNGEONS, CROWN_RIDER_DUNGEONS, CROWN_ASSASSIN_DUNGEONS,
+   CROWN_EXTRA1_DUNGEONS, CROWN_EXTRA2_DUNGEONS].forEach(reset);
   document.querySelectorAll(".card tbody .moff").forEach(cb => cb.checked = false);
   recompute();
 }
@@ -4910,21 +5058,88 @@ function openAuthor(){
     `<div class="modal-btns"><button class="mclose" onclick="closeModal()">关闭</button></div>`
   );
 }
-// 版本号长按 1 秒弹出作者信息（不影响连点 5 次展开开发者面板）
-(function initVerLongPress(){
+// ===== 版本更新记录（每次「发布版」更新追加一条；本地多次测试迭代合并为发布版一次更新）=====
+// 每条分三类：add 新增 / opt 优化 / fix 修复
+const UPDATES = [
+  { v: "1.10.16", date: "2026-09-02",
+    add: [
+      "「追加需求」列：设置中开启后，需求列可切换为追加需求，在不改动 Chaldea 需求的前提下记录额外想刷的量，一并计入剩余、需刷与 AP 价值判断，数据独立保存不丢失",
+      "版本更新公告：每次更新后版本号会闪烁提示，单击即可查看本次更新；此后长按版本号可随时查看更新记录"
+    ],
+    opt: [
+      "「自动禁用溢出材料」口径与页面剩余一致：库存 + 活动 + 已计入的刷取产出 ≥ 需求（含追加需求）即视为富余，不计入副本 AP 价值；未填需求也按富余剔除",
+      "副本表格改为固定列宽、表头按钮等宽：禁用材料或「掉率/AP效率」「需求/追加需求」切换不再引起列宽跳动"
+    ],
+    fix: [
+      "修复「解除全部禁用」对非终章活动副本（方舟/南海/冠位战等）无效的问题",
+      "修复副本卡片剩余/需刷与常规材料不一致（漏算追加需求）的问题"
+    ]
+  }
+];
+const VER_SEEN_KEY = "fgo_pillar_ver_seen";
+function verAnnounceUnread(){ try { return (localStorage.getItem(VER_SEEN_KEY) || "") !== String(VERSION); } catch(e){ return false; } }
+function markVerSeen(){
+  try { localStorage.setItem(VER_SEEN_KEY, String(VERSION)); } catch(e){}
   const ver = document.getElementById("ver");
-  if (!ver) return;
+  if (ver) { ver.classList.remove("unread"); ver.title = "长按查看版本更新记录"; }
+}
+function logsHtml(){
+  const grp = (t, items) => (items && items.length)
+    ? `<div class="verlog-grp">${t}</div><ul class="verlog-notes">${items.map(n => "<li>" + n + "</li>").join("")}</ul>`
+    : "";
+  return UPDATES.map(u =>
+    `<div class="verlog-item"><div class="verlog-head">v${u.v}<span class="verlog-date">${u.date}</span></div>` +
+    grp("新增", u.add) + grp("优化", u.opt) + grp("修复", u.fix) + `</div>`
+  ).join("");
+}
+// 更新公告（未读时单击版本号弹出；看过即标记已读，版本号恢复常态）
+function showVerAnnounce(){
+  markVerSeen();
+  const u = UPDATES[0];
+  openModal(
+    `<h3 class="fb-h">版本更新公告 · v${u ? u.v : VERSION}</h3>` +
+    `<div class="verlog">${logsHtml()}</div>` +
+    `<p class="fb-tip">已标记为已读。之后<b>长按版本号</b>可随时再次查看更新记录。</p>` +
+    `<button class="mclose" onclick="closeModal()">知道了</button>`
+  );
+}
+// 版本更新记录（长按版本号弹出）
+function openVerLog(){
+  openModal(
+    `<h3 class="fb-h">版本更新记录</h3>` +
+    `<div class="verlog">${logsHtml()}</div>` +
+    `<p class="fb-tip">版本更新后版本号会闪烁提示，单击即可查看；此后<b>长按版本号</b>可随时查看本记录。</p>` +
+    `<button class="mclose" onclick="closeModal()">关闭</button>`
+  );
+}
+// 长按绑定（按住 1 秒触发；excludeSel 排除子元素，如版本号在标题内需避开）
+function bindLongPress(el, fn, excludeSel){
+  if (!el) return;
   let t = null;
-  const start = () => { t = setTimeout(openAuthor, 1000); };
+  const start = (e) => {
+    if (excludeSel && e.target && e.target.closest && e.target.closest(excludeSel)) return;
+    t = setTimeout(() => { t = null; fn(); }, 1000);
+  };
   const cancel = () => { if (t) { clearTimeout(t); t = null; } };
-  ver.addEventListener("mousedown", start);
-  ver.addEventListener("mouseup", cancel);
-  ver.addEventListener("mouseleave", cancel);
+  el.addEventListener("mousedown", start);
+  el.addEventListener("mouseup", cancel);
+  el.addEventListener("mouseleave", cancel);
+}
+// 交互：长按主标题文字 → 作者信息；长按版本号 → 版本更新记录；版本未读 → 闪烁（单击走 fbDevClicks 弹公告）
+(function initVerInteractions(){
+  const ver = document.getElementById("ver");
+  const h1txt = document.querySelector("h1 .h1txt");
+  if (!ver) return;
+  if (verAnnounceUnread()) { ver.classList.add("unread"); ver.title = "版本已更新，单击查看更新公告"; }
+  else ver.title = "长按查看版本更新记录 · 长按上方标题查看作者";
+  bindLongPress(h1txt, openAuthor); // 仅标题文字区域长按 → 作者（版本号区域不受影响）
+  bindLongPress(ver, openVerLog);   // 长按版本号 → 版本更新记录
 })();
 // 页脚版本号
 const verEl = document.getElementById("ver");
 if (verEl) verEl.textContent = "v" + VERSION;
 applySettings();
+loadRedund(); // 加载追加需求列数据（各列表/卡片初始值读取用）
 build();
 buildReg();
 buildGems();
@@ -4937,6 +5152,7 @@ const _auto = loadAutoSave();
 if (_auto) applySlot(_auto);
 loadStocks(); // 副本材料字段按当前活动恢复（AUTO_KEY 单快照可能不含当前活动副本数据，stocks 为准）
 recompute();
+applyRedundUI(); // 按「开启追加需求」设置同步各表头按钮状态（关闭=off 并强制需求列）
 _initDone = true; // 数据恢复完成，此后自动保存才允许落盘
 document.getElementById("userLvl").addEventListener("input", () => {
   updateAppleInfo();
