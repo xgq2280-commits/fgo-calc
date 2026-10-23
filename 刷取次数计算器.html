@@ -895,7 +895,7 @@
 
 <!-- 外部数据脚本：更新数据文件（data.js/svt_costs.js/class_board_costs.js）后须同步递增 ?v=，避免浏览器缓存旧数据导致需求/活动获取错算 -->
 <script src="data.js?v=12"></script>
-<script src="svt_costs.js?v=6"></script>
+<script src="svt_costs.js?v=7"></script>
 <script src="class_board_costs.js?v=2"></script>
 <script>
 // 本地直接打开（file://）时无需下载识图组件，失败弹窗中不显示下载按钮；部署到网站后自动显示
@@ -1251,6 +1251,22 @@ const CROWN_EXTRA2_DUNGEONS = [
   }
 ];
 
+// ===== 冠位名代战（80637，2026-10-23 开放，war 8413「冠位名代戦 エクストラ」）=====
+// 掉落/掉率：Atlas quest 94163708（冠位名代 迎撃戦 Ⅶ，40AP）phase 1，Σ(num×dropExpected)，共 33 项
+const NAME_DAI_DUNGEONS = [
+  { id: "NameDai-7", name: "冠位名代 迎击战Ⅶ", cls: "extra1", mats: [
+    ["星冠的结晶〔EXTRAⅠ〕",11.083,0,false,0,0],["星冠的结晶〔EXTRAⅡ〕",10.917,0,false,0,0],
+    ["骑之金像",0.179,0,false,0,0],["术之金像",0.196,0,false,0,0],["杀之金像",0.201,0,false,0,0],["狂之金像",0.186,0,false,0,0],
+    ["骑之魔石",0.189,0,false,0,0],["术之魔石",0.176,0,false,0,0],["杀之魔石",0.175,0,false,0,0],["狂之魔石",0.157,0,false,0,0],
+    ["骑之秘石",0.139,0,false,0,0],["术之秘石",0.156,0,false,0,0],["杀之秘石",0.155,0,false,0,0],["狂之秘石",0.141,0,false,0,0],
+    ["骑之辉石",0.120,0,false,0,0],["术之辉石",0.132,0,false,0,0],["杀之辉石",0.116,0,false,0,0],["狂之辉石",0.130,0,false,0,0],
+    ["毒针",0.755,0,false,0,0],["小剑",0.752,0,false,0,0],["鳞粉",0.563,0,false,0,0],["太阳皮",0.552,0,false,0,0],
+    ["遗灵箱",0.421,0,false,0,0],["樱桃",0.254,0,false,0,0],["圣水",0.224,0,false,0,0],
+    ["兽之足迹〔EXTRAⅠ〕",0.163,0,false,0,0],["兽之足迹〔EXTRAⅡ〕",0.129,0,false,0,0],
+    ["睿智的业火",4.598,0,false,0,0],["量子",3.930,0,false,0,0]
+  ] }
+];
+
 // ===== 无限池（805861）每箱掉落 =====
 // 池1-10 各不同（特殊槽位不同），池10+ 为固定池。mats: [材料键, 每箱数量, 0, false, 库存, 需求]
 // 数据源：Chaldea events.4.json lotteries[805861].boxes（每 no 变体=池号），每箱数量 = Σ(maxNum×num)
@@ -1297,6 +1313,7 @@ function activeDungeons(){
   if (cur === "80559") return ARK_DUNGEONS;
   if (cur === "80586") return DUNGEONS_80586;
   if (cur === "80614") return NANHAI_DUNGEONS.concat(NANHAI_RECIPE_DUNGEONS); // 90++ 副本 + 3 张料理配方卡
+  if (cur === "80637") return NAME_DAI_DUNGEONS; // 冠位名代战（迎击战Ⅶ，掉率待抓）
   // 冠位戴冠战：术/剑/狂/弓/枪/骑/杀 已配置（CROWN_*_DUNGEONS）；ExtraⅠ=火/地Ⅶ、ExtraⅡ=風/水Ⅶ 各 2 副本
   if (cur === "coronation") {
     const cc = st.coronationClass || "saber";
@@ -1558,7 +1575,7 @@ const MAT_QUALITY = {
   "血泪": 2, "圣水": 2, "黑兽脂": 2, "羽毛": 1, "黄金釜": 2, "混沌爪": 2
 };
 // 版本号：每次功能/修复完成后递增（vX.Y.Z）
-const VERSION = "1.10.18";
+const VERSION = "1.10.22";
 // 设置默认值：隐藏特殊/技能/再临/其他 默认关闭（五类常规材料栏常显，开启后隐藏对应分类的掉落行与页签）
 const DEFAULT_SETTINGS = {
   storm: true, useAct: true, autoOverflow: true, hideDisableBox: false,
@@ -1650,7 +1667,7 @@ const CARD_THEMES = {
   "Lostbelt-No.1": "#C34A49", "Lostbelt-No.2": "#3D80DA", "Lostbelt-No.3": "#8122D0",
   "Lostbelt-No.4": "#E78735", "Lostbelt-No.5": "#F155CA", "Lostbelt-No.6": "#F9C14F",
   "Lostbelt-No.7": "#376BD7", "Lostbelt-NO_No": "#09CF9E",
-  "Ark-1000": "#6FB7E8", "Nanhai-909": "#0FA3B1", "Nanhai-Rec1": "#CD7F32", "Nanhai-Rec2": "#9BA0A6", "Nanhai-Rec3": "#D4A017", "Crown-Cast-7": "#D4A017", "Crown-Saber-7": "#D4A017", "Crown-Berserker-7": "#D4A017", "Crown-Archer-7": "#D4A017", "Crown-Lancer-7": "#D4A017", "Crown-Rider-7": "#D4A017", "Crown-Assassin-7": "#D4A017", "Crown-Extra1-7": "#D4A017", "Crown-Extra2-7": "#D4A017", "Lottery-80586": "#8A5FD0"
+  "Ark-1000": "#6FB7E8", "Nanhai-909": "#0FA3B1", "Nanhai-Rec1": "#CD7F32", "Nanhai-Rec2": "#9BA0A6", "Nanhai-Rec3": "#D4A017", "Crown-Cast-7": "#D4A017", "Crown-Saber-7": "#D4A017", "Crown-Berserker-7": "#D4A017", "Crown-Archer-7": "#D4A017", "Crown-Lancer-7": "#D4A017", "Crown-Rider-7": "#D4A017", "Crown-Assassin-7": "#D4A017", "Crown-Extra1-7": "#D4A017", "Crown-Extra2-7": "#D4A017", "Lottery-80586": "#8A5FD0", "NameDai-7": "#D4A017"
 };
 // hex(#rrggbb) → rgba()，带 alpha
 function hexA(hex, a){
@@ -2339,6 +2356,8 @@ const EVENT_DATA = {
   "80593": {name:"终章",jpName:"終章",jpStart:1766221200,jpEnd:1893423600,cnStart:0,cnEnd:0,mats:{"睿智的业火":68,"黑兽脂":7,"冰块":5,"圣杯":5,"圣水":5,"太阳皮":5,"极光钢":5,"核心":5,"煌星":5,"箭头":5,"鳞粉":5,"樱桃":3,"龙之逆鳞":3,"小刀":2,"小钟":2,"戒指":2,"混沌爪":2,"火药":2,"血泪":2,"金蛋":2,"铃铛":2,"马角":2,"黑灰":2,"不忘灰":1,"传承结晶":1,"小剑":1,"弓之金像":1,"杀之金像":1,"枪之金像":1,"狂之金像":1,"神脉灵子":1,"线球":1,"银冠":1,"骑之金像":1,"鬼灯":1}},
   "80613": {name:"Fate/Grand Order ～11th Anniversary～",jpName:"カルデア学園祭",jpStart:1785542400,jpEnd:1786507199,cnStart:0,cnEnd:0,mats:{"量子":8000000,"睿智的业火":10,"鳞粉":5,"樱桃":3,"箭头":3,"黄金果实":3,"凶骨":2,"剑之金像":2,"传承结晶":1,"线球":1}},
   "80627": {name:"去死吧！南瓜农场大屠杀",jpName:"くたばれ！ パンプキンファーム・スローター",jpStart:1789556400,jpEnd:1791345599,cnStart:0,cnEnd:0,mats:{"量子":62500000,"宵泣之铁桩":60,"小剑":60,"小钟":60,"残渣":60,"封魔灯":40,"弓之辉石":40,"弓之金像":40,"弓之银棋":40,"戒指":40,"无间齿轮":40,"杀之辉石":40,"杀之金像":40,"杀之银棋":40,"混沌爪":40,"狂之辉石":40,"狂之金像":40,"狂之银棋":40,"生命体":40,"终之花":40,"黑兽脂":40,"弓之魔石":30,"杀之魔石":30,"狂之魔石":30,"弓之秘石":20,"杀之秘石":20,"狂之秘石":20,"黄金果实":20,"黄金釜":20,"白银果实":16,"小刀":15,"核桃":15,"透镜":15,"髓液":15,"核心":10,"樱桃":10,"赤铜果实":9,"传承结晶":8,"原初之芙芙":1,"圣杯":1,"终局之芙芙":1}},
+  "80632": {name:"复刻:盈月剑风帖",jpName:"復刻版:盈月剣風帖",jpStart:1791968400,jpEnd:1793764799,cnStart:0,cnEnd:0,mats:{"量子":58000000,"凶骨":72,"小剑":50,"术之辉石":45,"狂之辉石":45,"术之金像":40,"术之银棋":40,"杀之辉石":40,"杀之金像":40,"杀之银棋":40,"狂之金像":40,"狂之银棋":40,"术之魔石":35,"枯淡勾玉":35,"核桃":35,"狂之魔石":35,"书页":33,"铃铛":33,"杀之魔石":30,"混沌爪":30,"马蹄铁":30,"髓液":27,"术之秘石":25,"狂之秘石":25,"太阳皮":20,"杀之秘石":20,"蛮神心脏":20,"马角":20,"鬼灯":20,"提灯":18,"鳞粉":18,"神脉灵子":17,"线球":17,"不忘灰":15,"咒兽胆石":15,"封魔灯":15,"愚者之锁":15,"毒针":15,"睿智的猛火":15,"英雄之证":15,"血泪":15,"金蛋":15,"睿智的业火":10,"传承结晶":8,"黄金果实":7,"剑之秘石":5,"剑之辉石":5,"剑之魔石":5,"冰块":3,"宵泣之铁桩":3,"生命体":3,"白银果实":3,"羽毛":2,"赤铜果实":2,"银冠":2,"原初之芙芙":1,"圣杯":1,"终局之芙芙":1}},
+  "80637": {name:"冠位名代战",jpName:"冠位名代戦",jpStart:1792746000,jpEnd:1893423600,cnStart:0,cnEnd:0,mats:{"原初之芙芙":1,"终局之芙芙":1}},
 };
 
 // 素材交换券：JP 按月轮换，每月可从5种材料中选1种；每日签到+任务共4张/天，数量=当月天数×4
@@ -3206,7 +3225,8 @@ const ACTIVITIES = [
   {id: "coronation", name: "冠位戴冠战"},
   {id: "80586", name: "最终物资补给作战"},
   {id: "final", name: "终章"},
-  {id: "80614", name: "迦勒底南海大决战"}
+  {id: "80614", name: "迦勒底南海大决战"},
+  {id: "80637", name: "冠位名代战"}
 ];
 // 冠位戴冠战可选职阶（掉落数据后续接入）
 const EXTRA_ICON = "https://media.fgo.wiki/2/2a/%E9%87%91%E5%8D%A1Extra.png";
@@ -3641,6 +3661,7 @@ function actDungeons(aid){
   if (aid === "80559") return ARK_DUNGEONS;
   if (aid === "80586") return DUNGEONS_80586; // 副本 + 无限池
   if (aid === "80614") return NANHAI_DUNGEONS.concat(NANHAI_RECIPE_DUNGEONS); // 90++ 副本 + 3 张料理配方卡
+  if (aid === "80637") return NAME_DAI_DUNGEONS;
   if (aid === "coronation") {
     // 冠位戴冠战：术/剑/狂/弓/枪/骑/杀/ExtraⅠ/ExtraⅡ 已配置（Extra 各 2 副本）
     const st = getSettings();
@@ -3870,7 +3891,7 @@ function applyActUI(){
   if (title) title.textContent = act ? act.name : cur;
   // 副标题：80586=无限池活动（重点产出在无限池）；80614=材料无限制兑换（南海大决战新活动形式）；其余显示柱子战规划
   const sub = document.getElementById("actSubtitle");
-  if (sub) sub.textContent = cur === "80586" ? "无限池刷取规划" : (cur === "80614" ? "材料无限制兑换" : "柱子战刷取规划");
+  if (sub) sub.textContent = cur === "80586" ? "无限池刷取规划" : (cur === "80614" ? "材料无限制兑换" : (cur === "80637" ? "冠位名代战刷取规划" : "柱子战刷取规划"));
   // 南海活动：显示「助战加成2+__」输入框（加成影响肉/海鲜/菜实际每把掉落）
   const nb = document.getElementById("nanhaiBoost");
   if (nb) {
@@ -4890,7 +4911,7 @@ function recompute(){
 
     card.querySelector(".apNum").textContent = apTotal.toFixed(1);
     d._ap = apTotal;
-    card.querySelector(".bn").textContent = bnIndex >= 0 ? dispName(d.mats[bnIndex][0]) + "（" + maxNeed + " 次）" : "无（材料均已富余）";
+    card.querySelector(".bn").textContent = !(d.mats && d.mats.length) ? "掉落数据待补齐" : (bnIndex >= 0 ? dispName(d.mats[bnIndex][0]) + "（" + maxNeed + " 次）" : "无（材料均已富余）");
     card.querySelector(".topc").textContent = topC >= 0 ? dispName(d.mats[topC][0]) + "（" + (ovRate(d.mats[topC], d) * curMeta(d.mats[topC][0], storm).ap).toFixed(1) + "AP）" : "—";
     // 料理配方卡：消耗需求总结（各小组换取次数所需材料 + 大组合计）
     if (d.recipe) {
@@ -4997,7 +5018,7 @@ function reEnable(){
   [DUNGEONS, ARK_DUNGEONS, NANHAI_DUNGEONS, NANHAI_RECIPE_DUNGEONS,
    CROWN_CAST_DUNGEONS, CROWN_CAST_DUNGEONS_NO_MANA, CROWN_SABER_DUNGEONS, CROWN_BERSERKER_DUNGEONS,
    CROWN_ARCHER_DUNGEONS, CROWN_LANCER_DUNGEONS, CROWN_RIDER_DUNGEONS, CROWN_ASSASSIN_DUNGEONS,
-   CROWN_EXTRA1_DUNGEONS, CROWN_EXTRA2_DUNGEONS].forEach(reset);
+   CROWN_EXTRA1_DUNGEONS, CROWN_EXTRA2_DUNGEONS, NAME_DAI_DUNGEONS].forEach(reset);
   document.querySelectorAll(".card tbody .moff").forEach(cb => cb.checked = false);
   recompute();
 }
@@ -5072,6 +5093,16 @@ function openAuthor(){
 // ===== 版本更新记录（每次「发布版」更新追加一条；本地多次测试迭代合并为发布版一次更新）=====
 // 每条分三类：add 新增 / opt 优化 / fix 修复
 const UPDATES = [
+  { v: "1.10.22", date: "2026-10-23",
+    add: [
+      "新增活动「冠位名代战」（2026-10-23 开放，可无限刷取）：接入活动页与「冠位名代 迎击战Ⅶ」关卡卡片，并补齐 33 项掉落与每把期望掉率（星冠结晶 EXTRAⅠ/Ⅱ、业火、量子及常规素材 / 技能石 / 再临棋子 / 兽之足迹）"
+    ],
+    opt: [
+      "补充从者养成成本：タマモアリア（★5 Rider，图鉴 No.483）的灵基再临 / 技能 / 附加技能消耗",
+      "更新游戏活动数据：新增「冠位名代战」固定获取材料统计，并补充 2026-10 复刻活动「复刻:盈月剑风帖」（58 种材料）的活动获取统计"
+    ],
+    fix: []
+  },
   { v: "1.10.18", date: "2026-10-11",
     add: [],
     opt: [
