@@ -714,9 +714,9 @@
 <div class="wrap">
   <header>
     <div class="header-left">
-      <div class="actsel" id="actSelBox" title="选择要规划的活动；开启某活动的「产出计入剩余」，该活动规划的刷取产出会计入其他活动与常规材料的剩余">
+      <div class="actsel" id="actSelBox">
         <label>活动</label>
-        <button class="actbtn" onclick="toggleActMenu()"><span id="actName">终章</span><i class="arr">▾</i></button>
+        <button class="actbtn" onclick="toggleActMenu()" title="选择要规划的活动；开启某活动的「产出计入剩余」，该活动规划的刷取产出会计入其他活动与常规材料的剩余"><span id="actName">终章</span><i class="arr">▾</i></button>
         <div class="actmenu" id="actMenu" style="display:none"></div>
       </div>
       <input type="checkbox" id="autoOverflow" style="display:none">
@@ -1575,7 +1575,7 @@ const MAT_QUALITY = {
   "血泪": 2, "圣水": 2, "黑兽脂": 2, "羽毛": 1, "黄金釜": 2, "混沌爪": 2
 };
 // 版本号：每次功能/修复完成后递增（vX.Y.Z）
-const VERSION = "1.10.22";
+const VERSION = "1.10.23";
 // 设置默认值：隐藏特殊/技能/再临/其他 默认关闭（五类常规材料栏常显，开启后隐藏对应分类的掉落行与页签）
 const DEFAULT_SETTINGS = {
   storm: true, useAct: true, autoOverflow: true, hideDisableBox: false,
@@ -3520,6 +3520,11 @@ function saveCdEdit(k){
   closeModal();
   renderCustomDrops();
 }
+// 常规材料点击入口：全部显示开启 → 编辑弹窗（库存/需求/活动）；关闭 → 各活动刷取产出/跳转弹窗
+function onMatClick(k){
+  if (getSettings().regShowAll) openRegEdit(k);
+  else openRemJump(k);
+}
 // 常规材料（含技能石/特殊）：点击材料打开编辑弹窗（库存/需求/活动 三输入），无需删除按钮
 function openRegEdit(k){
   const s = matSrc(k);
@@ -4007,7 +4012,7 @@ function buildMatList(list, tbSel, cls){
     const needShow = rmShow ? redundOf(m[0]) : (m[2] || 0); // 追加需求列模式显示追加需求值，否则显示需求
     const tr = document.createElement("tr");
     tr.innerHTML =
-      `<td class="material"><span class="mwrap"><img class="icon" src="${meta.img}" alt="" onerror="this.remove()" onclick="openRegEdit('${m[0]}')">` +
+      `<td class="material"><span class="mwrap"><img class="icon" src="${meta.img}" alt="" onerror="this.remove()" onclick="onMatClick('${m[0]}')">` +
       `<span class="mname">${dispName(m[0])}</span></span>` +
       `<small><a class="aplink" target="_blank" rel="noopener">—</a></small></td>` +
       `<td><input type="${qp ? "text" : "number"}" min="0" class="narrow ${cls}-need" data-i="${i}" data-f="need" data-key="${m[0]}" value="${qp ? fmtNum(needShow) : needShow}"></td>` +
@@ -4176,7 +4181,7 @@ function renderRegDense(list, grid, cls){
     const item = document.createElement("div");
     item.className = "dense-item";
     item.title = regTooltip(m);
-    item.innerHTML = `<img src="${meta.img}" alt="" onerror="this.remove()" onclick="openRegEdit('${m[0]}')">` +
+    item.innerHTML = `<img src="${meta.img}" alt="" onerror="this.remove()" onclick="onMatClick('${m[0]}')">` +
       `<div class="dnums"><div class="inv">${qp ? fmtNum(inv) : inv}</div>` +
       `<div class="rem ${rem >= 0 ? "ok" : "lack"}">${qp ? fmtNum(rem) : rem}</div></div>`;
     grid.appendChild(item);
@@ -5093,6 +5098,15 @@ function openAuthor(){
 // ===== 版本更新记录（每次「发布版」更新追加一条；本地多次测试迭代合并为发布版一次更新）=====
 // 每条分三类：add 新增 / opt 优化 / fix 修复
 const UPDATES = [
+  { v: "1.10.23", date: "2026-10-24",
+    add: [],
+    opt: [
+      "材料仓库点击行为随「全部显示」开关区分：开启时打开库存/需求/活动编辑弹窗；关闭时打开各活动刷取产出与跳转弹窗"
+    ],
+    fix: [
+      "活动下拉菜单展开后，悬停具体活动项不再显示「选择要规划的活动…」提示而遮挡活动名（该提示仅在活动按钮上显示）"
+    ]
+  },
   { v: "1.10.22", date: "2026-10-23",
     add: [
       "新增活动「冠位名代战」（2026-10-23 开放，可无限刷取）：接入活动页与「冠位名代 迎击战Ⅶ」关卡卡片，并补齐 33 项掉落与每把期望掉率（星冠结晶 EXTRAⅠ/Ⅱ、业火、量子及常规素材 / 技能石 / 再临棋子 / 兽之足迹）"
