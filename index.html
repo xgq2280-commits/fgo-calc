@@ -895,7 +895,7 @@
 
 <!-- 外部数据脚本：更新数据文件（data.js/svt_costs.js/class_board_costs.js）后须同步递增 ?v=，避免浏览器缓存旧数据导致需求/活动获取错算 -->
 <script src="data.js?v=12"></script>
-<script src="svt_costs.js?v=7"></script>
+<script src="svt_costs.js?v=8"></script>
 <script src="class_board_costs.js?v=2"></script>
 <script>
 // 本地直接打开（file://）时无需下载识图组件，失败弹窗中不显示下载按钮；部署到网站后自动显示
@@ -1267,6 +1267,24 @@ const NAME_DAI_DUNGEONS = [
   ] }
 ];
 
+// ===== 真冬的水着特别篇（80639，2026-11-11 ~ 12-02，war 9208「特N型生命圏 GUNMA」）=====
+// 掉落/掉率：Atlas quest phase 1（各 40AP，Lv90+++ ねばねば級），Σ(num×dropExpected)
+// キンメガスラノッブ 全难度 drops 为空（Atlas 未公开）故未建卡；活动货币/点数与礼装未计入
+const PUNI_SLA_MATS = [["量子",6.651,0,false,0,0],["睿智的业火",4.938,0,false,0,0],["愚者之锁",1.25,0,false,0,0],["神脉灵子",0.875,0,false,0,0],["黑兽脂",0.562,0,false,0,0],["剑之魔石",0.375,0,false,0,0],["追忆的贝壳",0.375,0,false,0,0],["剑之秘石",0.312,0,false,0,0],["剑之辉石",0.25,0,false,0,0]];
+const PUNI_AKA_MATS = [["量子",6.624,0,false,0,0],["睿智的业火",4.435,0,false,0,0],["英雄之证",1.087,0,false,0,0],["八连双晶",1.043,0,false,0,0],["弓之魔石",0.826,0,false,0,0],["弓之辉石",0.391,0,false,0,0],["弓之秘石",0.391,0,false,0,0],["血泪",0.391,0,false,0,0],["追忆的贝壳",0.174,0,false,0,0],["狂之辉石",0.043,0,false,0,0],["狂之魔石",0.043,0,false,0,0]];
+const PUNI_MIDO_MATS = [["量子",6.497,0,false,0,0],["睿智的业火",4.475,0,false,0,0],["不忘灰",1.5,0,false,0,0],["收光体",0.875,0,false,0,0],["杀之魔石",0.725,0,false,0,0],["杀之辉石",0.7,0,false,0,0],["树根",0.45,0,false,0,0],["杀之秘石",0.35,0,false,0,0],["追忆的贝壳",0.15,0,false,0,0]];
+const PUNI_CHO_MATS = [["量子",6.468,0,false,0,0],["睿智的业火",4.418,0,false,0,0],["生命体",1.291,0,false,0,0],["提灯",1.145,0,false,0,0],["术之辉石",0.691,0,false,0,0],["术之魔石",0.509,0,false,0,0],["月光核",0.418,0,false,0,0],["追忆的贝壳",0.364,0,false,0,0],["术之秘石",0.345,0,false,0,0],["狂之魔石",0.055,0,false,0,0],["狂之辉石",0.036,0,false,0,0],["狂之秘石",0.036,0,false,0,0]];
+const PUNI_CHIMERA_MATS = [["量子",6.674,0,false,0,0],["睿智的业火",5.5,0,false,0,0],["宵泣之铁桩",1.3,0,false,0,0],["蛇眼",0.7,0,false,0,0],["胎毛",0.5,0,false,0,0],["追忆的贝壳",0.3,0,false,0,0],["骑之辉石",0.2,0,false,0,0],["骑之魔石",0.2,0,false,0,0],["骑之秘石",0.1,0,false,0,0]];
+const PUNI_BOAR_MATS = [["量子",6.48,0,false,0,0],["睿智的业火",4.783,0,false,0,0],["龙之牙",1.304,0,false,0,0],["戒指",0.87,0,false,0,0],["枪之魔石",0.739,0,false,0,0],["枪之辉石",0.609,0,false,0,0],["枪之秘石",0.435,0,false,0,0],["咒兽胆石",0.261,0,false,0,0],["追忆的贝壳",0.174,0,false,0,0]];
+const PUNI_DUNGEONS = [
+  { id: "Puni-Sla", name: "スラノッブの群れ〔ねばねば級〕", cls: "剑", mats: PUNI_SLA_MATS },
+  { id: "Puni-Aka", name: "アカスラノッブの群れ〔ねばねば級〕", cls: "弓", mats: PUNI_AKA_MATS },
+  { id: "Puni-Mido", name: "ミドスラノッブの群れ〔ねばねば級〕", cls: "杀", mats: PUNI_MIDO_MATS },
+  { id: "Puni-Cho", name: "クローン長慶〔ねばねば級〕", cls: "术", mats: PUNI_CHO_MATS },
+  { id: "Puni-Chimera", name: "青水キメラの群れ〔ねばねば級〕", cls: "骑", mats: PUNI_CHIMERA_MATS },
+  { id: "Puni-Boar", name: "青水イノシシの群れ〔ねばねば級〕", cls: "枪", mats: PUNI_BOAR_MATS }
+];
+
 // ===== 无限池（805861）每箱掉落 =====
 // 池1-10 各不同（特殊槽位不同），池10+ 为固定池。mats: [材料键, 每箱数量, 0, false, 库存, 需求]
 // 数据源：Chaldea events.4.json lotteries[805861].boxes（每 no 变体=池号），每箱数量 = Σ(maxNum×num)
@@ -1314,6 +1332,7 @@ function activeDungeons(){
   if (cur === "80586") return DUNGEONS_80586;
   if (cur === "80614") return NANHAI_DUNGEONS.concat(NANHAI_RECIPE_DUNGEONS); // 90++ 副本 + 3 张料理配方卡
   if (cur === "80637") return NAME_DAI_DUNGEONS; // 冠位名代战（迎击战Ⅶ，掉率待抓）
+  if (cur === "80639") return PUNI_DUNGEONS; // 真冬的水着特别篇（6 种敌人 90+++ 周回）
   // 冠位戴冠战：术/剑/狂/弓/枪/骑/杀 已配置（CROWN_*_DUNGEONS）；ExtraⅠ=火/地Ⅶ、ExtraⅡ=風/水Ⅶ 各 2 副本
   if (cur === "coronation") {
     const cc = st.coronationClass || "saber";
@@ -1575,7 +1594,7 @@ const MAT_QUALITY = {
   "血泪": 2, "圣水": 2, "黑兽脂": 2, "羽毛": 1, "黄金釜": 2, "混沌爪": 2
 };
 // 版本号：每次功能/修复完成后递增（vX.Y.Z）
-const VERSION = "1.10.23";
+const VERSION = "1.10.24";
 // 设置默认值：隐藏特殊/技能/再临/其他 默认关闭（五类常规材料栏常显，开启后隐藏对应分类的掉落行与页签）
 const DEFAULT_SETTINGS = {
   storm: true, useAct: true, autoOverflow: true, hideDisableBox: false,
@@ -1667,7 +1686,8 @@ const CARD_THEMES = {
   "Lostbelt-No.1": "#C34A49", "Lostbelt-No.2": "#3D80DA", "Lostbelt-No.3": "#8122D0",
   "Lostbelt-No.4": "#E78735", "Lostbelt-No.5": "#F155CA", "Lostbelt-No.6": "#F9C14F",
   "Lostbelt-No.7": "#376BD7", "Lostbelt-NO_No": "#09CF9E",
-  "Ark-1000": "#6FB7E8", "Nanhai-909": "#0FA3B1", "Nanhai-Rec1": "#CD7F32", "Nanhai-Rec2": "#9BA0A6", "Nanhai-Rec3": "#D4A017", "Crown-Cast-7": "#D4A017", "Crown-Saber-7": "#D4A017", "Crown-Berserker-7": "#D4A017", "Crown-Archer-7": "#D4A017", "Crown-Lancer-7": "#D4A017", "Crown-Rider-7": "#D4A017", "Crown-Assassin-7": "#D4A017", "Crown-Extra1-7": "#D4A017", "Crown-Extra2-7": "#D4A017", "Lottery-80586": "#8A5FD0", "NameDai-7": "#D4A017"
+  "Ark-1000": "#6FB7E8", "Nanhai-909": "#0FA3B1", "Nanhai-Rec1": "#CD7F32", "Nanhai-Rec2": "#9BA0A6", "Nanhai-Rec3": "#D4A017", "Crown-Cast-7": "#D4A017", "Crown-Saber-7": "#D4A017", "Crown-Berserker-7": "#D4A017", "Crown-Archer-7": "#D4A017", "Crown-Lancer-7": "#D4A017", "Crown-Rider-7": "#D4A017", "Crown-Assassin-7": "#D4A017", "Crown-Extra1-7": "#D4A017", "Crown-Extra2-7": "#D4A017", "Lottery-80586": "#8A5FD0", "NameDai-7": "#D4A017",
+  "Puni-Sla": "#2E9E8F", "Puni-Aka": "#2E9E8F", "Puni-Mido": "#2E9E8F", "Puni-Cho": "#2E9E8F", "Puni-Chimera": "#2E9E8F", "Puni-Boar": "#2E9E8F"
 };
 // hex(#rrggbb) → rgba()，带 alpha
 function hexA(hex, a){
@@ -2358,6 +2378,7 @@ const EVENT_DATA = {
   "80627": {name:"去死吧！南瓜农场大屠杀",jpName:"くたばれ！ パンプキンファーム・スローター",jpStart:1789556400,jpEnd:1791345599,cnStart:0,cnEnd:0,mats:{"量子":62500000,"宵泣之铁桩":60,"小剑":60,"小钟":60,"残渣":60,"封魔灯":40,"弓之辉石":40,"弓之金像":40,"弓之银棋":40,"戒指":40,"无间齿轮":40,"杀之辉石":40,"杀之金像":40,"杀之银棋":40,"混沌爪":40,"狂之辉石":40,"狂之金像":40,"狂之银棋":40,"生命体":40,"终之花":40,"黑兽脂":40,"弓之魔石":30,"杀之魔石":30,"狂之魔石":30,"弓之秘石":20,"杀之秘石":20,"狂之秘石":20,"黄金果实":20,"黄金釜":20,"白银果实":16,"小刀":15,"核桃":15,"透镜":15,"髓液":15,"核心":10,"樱桃":10,"赤铜果实":9,"传承结晶":8,"原初之芙芙":1,"圣杯":1,"终局之芙芙":1}},
   "80632": {name:"复刻:盈月剑风帖",jpName:"復刻版:盈月剣風帖",jpStart:1791968400,jpEnd:1793764799,cnStart:0,cnEnd:0,mats:{"量子":58000000,"凶骨":72,"小剑":50,"术之辉石":45,"狂之辉石":45,"术之金像":40,"术之银棋":40,"杀之辉石":40,"杀之金像":40,"杀之银棋":40,"狂之金像":40,"狂之银棋":40,"术之魔石":35,"枯淡勾玉":35,"核桃":35,"狂之魔石":35,"书页":33,"铃铛":33,"杀之魔石":30,"混沌爪":30,"马蹄铁":30,"髓液":27,"术之秘石":25,"狂之秘石":25,"太阳皮":20,"杀之秘石":20,"蛮神心脏":20,"马角":20,"鬼灯":20,"提灯":18,"鳞粉":18,"神脉灵子":17,"线球":17,"不忘灰":15,"咒兽胆石":15,"封魔灯":15,"愚者之锁":15,"毒针":15,"睿智的猛火":15,"英雄之证":15,"血泪":15,"金蛋":15,"睿智的业火":10,"传承结晶":8,"黄金果实":7,"剑之秘石":5,"剑之辉石":5,"剑之魔石":5,"冰块":3,"宵泣之铁桩":3,"生命体":3,"白银果实":3,"羽毛":2,"赤铜果实":2,"银冠":2,"原初之芙芙":1,"圣杯":1,"终局之芙芙":1}},
   "80637": {name:"冠位名代战",jpName:"冠位名代戦",jpStart:1792746000,jpEnd:1893423600,cnStart:0,cnEnd:0,mats:{"原初之芙芙":1,"终局之芙芙":1}},
+  "80639": {name:"真冬的水着特别篇",jpName:"真冬の水着スペシャル ぐだぐだぷにぷにウォーズ！～史上最低の爆弾娘～",jpStart:1794394800,jpEnd:1796183999,cnStart:0,cnEnd:0,mats:{"量子":62500000,"不忘灰":60,"小钟":60,"残渣":60,"火药":60,"太阳皮":40,"弓之辉石":40,"弓之金像":40,"弓之银棋":40,"无间齿轮":40,"枯淡勾玉":40,"混沌爪":40,"狂之辉石":40,"狂之金像":40,"狂之银棋":40,"终之花":40,"骑之辉石":40,"骑之金像":40,"骑之银棋":40,"弓之魔石":30,"狂之魔石":30,"骑之魔石":30,"九十九镜":20,"圣水":20,"弓之秘石":20,"树根":20,"狂之秘石":20,"骑之秘石":20,"黄金果实":20,"白银果实":16,"小刀":15,"透镜":15,"铃铛":15,"黑灰":15,"睿智的业火":10,"黎明琥珀":10,"黑兽脂":10,"赤铜果实":9,"传承结晶":8,"原初之芙芙":1,"终局之芙芙":1}},
 };
 
 // 素材交换券：JP 按月轮换，每月可从5种材料中选1种；每日签到+任务共4张/天，数量=当月天数×4
@@ -2378,7 +2399,8 @@ const EXCHANGE_VOUCHER = {
   "2026-07": ["魔方体","铃铛","八连双晶","黑灰","宵泣之铁桩"],
   "2026-08": ["追忆的贝壳","枯淡勾玉","透镜","英雄之证","髓液"],
   "2026-09": ["鳞粉","冰块","提灯","毒针","不忘灰"],
-  "2026-10": ["蛇眼","太阳皮","勋章","龙之牙","凶骨"]
+  "2026-10": ["蛇眼","太阳皮","勋章","龙之牙","凶骨"],
+  "2026-11": ["羽毛","银冠","极光钢","残渣","愚者之锁"]
 };
 // 当月天数（用于素材交换券数量 = 当月天数 × 4 张/天）
 function monthDays(m){ const p = String(m).split("-").map(Number); return new Date(p[0], p[1], 0).getDate(); }
@@ -3226,7 +3248,8 @@ const ACTIVITIES = [
   {id: "80586", name: "最终物资补给作战"},
   {id: "final", name: "终章"},
   {id: "80614", name: "迦勒底南海大决战"},
-  {id: "80637", name: "冠位名代战"}
+  {id: "80637", name: "冠位名代战"},
+  {id: "80639", name: "真冬的水着特别篇"}
 ];
 // 冠位戴冠战可选职阶（掉落数据后续接入）
 const EXTRA_ICON = "https://media.fgo.wiki/2/2a/%E9%87%91%E5%8D%A1Extra.png";
@@ -3667,6 +3690,7 @@ function actDungeons(aid){
   if (aid === "80586") return DUNGEONS_80586; // 副本 + 无限池
   if (aid === "80614") return NANHAI_DUNGEONS.concat(NANHAI_RECIPE_DUNGEONS); // 90++ 副本 + 3 张料理配方卡
   if (aid === "80637") return NAME_DAI_DUNGEONS;
+  if (aid === "80639") return PUNI_DUNGEONS;
   if (aid === "coronation") {
     // 冠位戴冠战：术/剑/狂/弓/枪/骑/杀/ExtraⅠ/ExtraⅡ 已配置（Extra 各 2 副本）
     const st = getSettings();
@@ -3896,7 +3920,7 @@ function applyActUI(){
   if (title) title.textContent = act ? act.name : cur;
   // 副标题：80586=无限池活动（重点产出在无限池）；80614=材料无限制兑换（南海大决战新活动形式）；其余显示柱子战规划
   const sub = document.getElementById("actSubtitle");
-  if (sub) sub.textContent = cur === "80586" ? "无限池刷取规划" : (cur === "80614" ? "材料无限制兑换" : (cur === "80637" ? "冠位名代战刷取规划" : "柱子战刷取规划"));
+  if (sub) sub.textContent = cur === "80586" ? "无限池刷取规划" : (cur === "80614" ? "材料无限制兑换" : (cur === "80637" ? "冠位名代战刷取规划" : (cur === "80639" ? "活动周回刷取规划" : "柱子战刷取规划")));
   // 南海活动：显示「助战加成2+__」输入框（加成影响肉/海鲜/菜实际每把掉落）
   const nb = document.getElementById("nanhaiBoost");
   if (nb) {
@@ -5023,7 +5047,7 @@ function reEnable(){
   [DUNGEONS, ARK_DUNGEONS, NANHAI_DUNGEONS, NANHAI_RECIPE_DUNGEONS,
    CROWN_CAST_DUNGEONS, CROWN_CAST_DUNGEONS_NO_MANA, CROWN_SABER_DUNGEONS, CROWN_BERSERKER_DUNGEONS,
    CROWN_ARCHER_DUNGEONS, CROWN_LANCER_DUNGEONS, CROWN_RIDER_DUNGEONS, CROWN_ASSASSIN_DUNGEONS,
-   CROWN_EXTRA1_DUNGEONS, CROWN_EXTRA2_DUNGEONS, NAME_DAI_DUNGEONS].forEach(reset);
+   CROWN_EXTRA1_DUNGEONS, CROWN_EXTRA2_DUNGEONS, NAME_DAI_DUNGEONS, PUNI_DUNGEONS].forEach(reset);
   document.querySelectorAll(".card tbody .moff").forEach(cb => cb.checked = false);
   recompute();
 }
@@ -5098,6 +5122,17 @@ function openAuthor(){
 // ===== 版本更新记录（每次「发布版」更新追加一条；本地多次测试迭代合并为发布版一次更新）=====
 // 每条分三类：add 新增 / opt 优化 / fix 修复
 const UPDATES = [
+  { v: "1.10.24", date: "2026-11-14",
+    add: [
+      "新增活动「真冬的水着特别篇」（80639，2026-11-11 开放，可无限刷取）：接入 6 种敌人的 90+++ 周回副本卡片与每把期望掉率（量子、睿智的业火、常规素材、技能石、棋子等）"
+    ],
+    opt: [
+      "补充从者养成成本：卑弥呼＆壱与（★5 Pretender，No.484）、雑賀孫一（★4 Rider，No.485）、松永久秀（★4 Berserker，No.486）",
+      "补充素材交换券 2026-11 券池：凤凰羽毛 / 光银之冠 / 极光钢 / 疯狂残渣 / 愚者之锁",
+      "更新游戏活动数据：新增「真冬的水着特别篇」的固定获取材料统计（41 种）"
+    ],
+    fix: []
+  },
   { v: "1.10.23", date: "2026-10-24",
     add: [],
     opt: [
