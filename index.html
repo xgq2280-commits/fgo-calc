@@ -540,6 +540,97 @@
   .actmenu-item.custom-flash{animation:rcflash 1.2s infinite; border-radius:8px;}
   .actmenu-item .aname{flex:1;}
   .actmenu-item .switch span:first-child{font-size:11px; color:var(--muted); font-weight:normal;}
+  /* ===== 柱子剩余数量板块（终章） ===== */
+  .raid-section{margin:26px 0 0;}
+  .raid-section h2{margin:0 0 12px; font-size:20px; color:var(--gold); letter-spacing:4px;}
+  .raid-section h2 small{font-size:12px; color:var(--muted); letter-spacing:1px; margin-left:10px;}
+  .raid-grid{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:12px;}
+  .raid-card{
+    position:relative; padding:12px 14px 11px; border-radius:12px;
+    background:linear-gradient(180deg, rgba(58,26,96,.55), rgba(24,14,40,.75));
+    border:1px solid rgba(150,110,220,.35);
+    box-shadow:0 3px 14px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.04);
+  }
+  .raid-head{display:flex; align-items:center; gap:7px; margin-bottom:10px;}
+  .raid-head .ricon{width:22px; height:22px; flex:none;}
+  .raid-head .rname{font-size:14px; font-weight:700; color:#e9dcff; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .raid-head .rcls{width:18px; height:18px; flex:none; opacity:.95;}
+  .raid-head .rno{font-size:11px; color:#a58ad0; letter-spacing:1px; flex:none; margin-right:auto;}
+  .raid-head .rpct{font-size:13px; font-weight:800; color:#e6b8ff; flex:none; font-variant-numeric:tabular-nums;}
+  .raid-head .rpct.low{color:#ff9b9b;}
+  .raid-barwrap{position:relative; padding-bottom:17px;}
+  /* 内条：视觉高度 15px（原图 14px 比例）；实际盒高 19px、四周各外扩 2px 压到外框底下，
+     这样任何缩放下内条都不会和外框之间露出底色（含左右两端圆角处的月牙形空隙）。
+     margin 用负值抵消，布局尺寸仍为 15px 高、原宽 */
+  .raid-bar{
+    position:relative; height:19px; margin:-2px -2px; border-radius:9px; overflow:hidden;
+    background:linear-gradient(180deg, #2a1440, #170b26);
+  }
+  .raid-fill{
+    position:absolute; left:0; top:0; bottom:0; width:0; z-index:1;
+    background:linear-gradient(90deg, #7a2bd0 0%, #b64ee8 42%, #e07bff 72%, #ff8fd0 100%);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.3);
+  }
+  /* 棕色外框覆盖层：伪元素默认 content-box，必须显式 border-box 才能让 height 含边框、内孔 = 15px 贴合内条
+     不再加外侧黑色描边（白天模式下很突兀） */
+  .raid-barwrap::after{
+    content:""; position:absolute; left:-4px; right:-4px; top:-4px;
+    box-sizing:border-box; height:23px;
+    z-index:3; pointer-events:none;
+    border:4px solid #9a7a44; border-radius:13px;
+  }
+  .raid-left{
+    position:absolute; right:14px; top:20px; transform:translateY(-50%);
+    display:flex; align-items:baseline; gap:5px; pointer-events:none; z-index:4;
+  }
+  .raid-left .lbl{font-size:10px; color:#d9b8f5; letter-spacing:1px; flex:none; white-space:nowrap;
+    text-shadow:0 1px 2px rgba(60,18,100,.9);}
+  .raid-left .rval{
+    font-size:18px; font-weight:800; letter-spacing:.5px; color:#f7d4ff;
+    font-variant-numeric:tabular-nums;
+    text-shadow:
+      -1px -1px 0 #6b2394, 1px -1px 0 #6b2394, -1px 1px 0 #6b2394, 1px 1px 0 #6b2394,
+      0 0 7px rgba(206,120,255,.75);
+  }
+  /* 整卡灰色遮罩（未开放 No.8 / 已击破柱子）：约一半透明，能隐约看到底下的名称与进度条 */
+  .raid-lock{
+    position:absolute; left:-1px; right:-1px; top:-1px; bottom:-1px; z-index:5;
+    display:flex; align-items:center; justify-content:center;
+    border-radius:12px; padding:0 8px; text-align:center;
+    background:rgba(106,106,130,.7);
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.10), inset 0 0 26px rgba(18,14,32,.45);
+    color:#f7f5ff; font-size:14px; font-weight:800; letter-spacing:2px;
+    text-shadow:0 1px 3px rgba(0,0,0,.75);
+  }
+  .raid-foot{
+    margin-top:7px; font-size:11px; color:var(--muted);
+    display:flex; align-items:baseline; justify-content:space-between; gap:8px;
+  }
+  .raid-foot .rf-right{display:flex; align-items:baseline; gap:14px;}
+  .raid-foot .rf-done{display:inline-flex; align-items:baseline; gap:5px; white-space:nowrap;}
+  .raid-foot .rf-done input{
+    width:48px; padding:1px 3px; border-radius:5px; font-size:12px; text-align:right;
+    font-variant-numeric:tabular-nums;
+    background:rgba(255,255,255,.06); border:1px solid rgba(150,110,220,.45); color:#f0dcff;
+  }
+  /* 数字输入框的上下箭头在窄框里挤占宽度，直接隐藏 */
+  .raid-foot .rf-done input::-webkit-outer-spin-button,
+  .raid-foot .rf-done input::-webkit-inner-spin-button{-webkit-appearance:none; margin:0;}
+  .raid-foot .rf-done input{-moz-appearance:textfield; appearance:textfield;}
+  .raid-foot .rf-done input:focus{outline:none; border-color:#c79cff;}
+  .raid-foot .rf-goal{color:#c2a8e6; white-space:nowrap;}
+  .raid-foot .rf-goal b{font-size:12px; color:#f0dcff; font-variant-numeric:tabular-nums;}
+  html.light .raid-card{background:linear-gradient(180deg,#f3ecff,#e9e0fb); border-color:#cdb8ee;}
+  html.light .raid-head .rname{color:#3d2463;}
+  html.light .raid-head .rno{color:#8b6fb5;}
+  html.light .raid-head .rpct{color:#7b3fb5;}
+  html.light .raid-left .lbl{color:#7d4fa8;}
+  html.light .raid-left .rval{color:#b24fd8; text-shadow:-1px -1px 0 #4a1470, 1px -1px 0 #4a1470, -1px 1px 0 #4a1470, 1px 1px 0 #4a1470, 0 0 4px rgba(180,100,230,.35);}
+  html.light .raid-foot{color:#7a6595;}
+  html.light .raid-foot .rf-done input{background:#fff; border-color:#cdb8ee; color:#3d2463;}
+  html.light .raid-foot .rf-goal{color:#7a6595;}
+  html.light .raid-foot .rf-goal b{color:#5a3f86;}
+  html.light .raid-lock{background:rgba(184,184,200,.7); color:#2b2740; text-shadow:none;}
   /* 柱子战上方活动标题 */
   .actbanner{
     display:flex; align-items:baseline; gap:10px; margin:26px 0 14px;
@@ -789,6 +880,11 @@
         <div class="apple-grid" id="appleGrid"></div>
       </div>
     </div>
+  </div>
+
+  <div class="section raid-section" id="raidSection" style="display:none">
+    <h2>柱子剩余数量 <small>数据按小时更新</small></h2>
+    <div class="raid-grid" id="raidGrid"></div>
   </div>
 
   <div class="actbanner"><h2 id="curActTitle">终章</h2>
@@ -1596,7 +1692,7 @@ const MAT_QUALITY = {
   "血泪": 2, "圣水": 2, "黑兽脂": 2, "羽毛": 1, "黄金釜": 2, "混沌爪": 2
 };
 // 版本号：每次功能/修复完成后递增（vX.Y.Z）
-const VERSION = "1.10.25";
+const VERSION = "1.10.41";
 // 设置默认值：隐藏特殊/技能/再临/其他 默认关闭（五类常规材料栏常显，开启后隐藏对应分类的掉落行与页签）
 const DEFAULT_SETTINGS = {
   storm: true, useAct: true, autoOverflow: true, hideDisableBox: false,
@@ -3910,6 +4006,94 @@ function onActToggle(aid){
   buildReg(); buildGems(); buildRegs(); buildOthers(); buildSpec();
   syncInputs(); recompute();
 }
+// ===== 柱子剩余数量（终章 8 柱；数据手动维护：更新下方 RAID_TOTAL / RAID_LEFT 即可）=====
+const RAID_TOTAL = 20000000; // 每根柱子总量（进度条满格基准）
+// 各柱子剩余数量（键 = DUNGEONS 副本 id）；总量相同时百分比 = 剩余 / RAID_TOTAL
+const RAID_LEFT = {
+  "Lostbelt-No.1": 20000000,
+  "Lostbelt-No.2": 20000000,
+  "Lostbelt-No.3": 20000000,
+  "Lostbelt-No.4": 20000000,
+  "Lostbelt-No.5": 20000000,
+  "Lostbelt-No.6": 20000000,
+  "Lostbelt-No.7": 20000000,
+  "Lostbelt-NO_No": 20000000
+};
+// 千分位显示（19,849,411）
+function fmtThousand(n){
+  if (!isFinite(n)) return "0";
+  return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+// 解析带千分位/空格的输入
+function parseThousand(s){
+  return Number(String(s).replace(/[,\s]/g, ""));
+}
+function buildRaid(){
+  const box = document.getElementById("raidGrid");
+  if (!box) return;
+  bindRaidInputs(); // 容器级委托只需绑一次（innerHTML 重绘不影响）
+  // No.8 开放条件：前 7 根柱子中任意 4 根剩余归零 → needClear = 还需归零的柱子数
+  const cleared = DUNGEONS.filter(d => d.id !== "Lostbelt-NO_No" && Number(RAID_LEFT[d.id]) === 0).length;
+  const needClear = Math.max(0, 4 - cleared);
+  box.innerHTML = DUNGEONS.map((d, i) => {
+    const left = Number(RAID_LEFT[d.id]);
+    const val = isFinite(left) && left >= 0 ? left : 0;
+    const pct = RAID_TOTAL > 0 ? Math.max(0, Math.min(1, val / RAID_TOTAL)) : 0;
+    const icon = PILLAR_ICONS[d.id] || "";
+    const clsIcon = d.cls ? (CLASS_ICONS[d.cls] || "") : "";
+    const locked = d.id === "Lostbelt-NO_No" && needClear > 0;
+    // 已击破：剩余归零的柱子整卡覆盖同款灰层（No.8 未开放优先显示未开放）
+    const defeated = !locked && val === 0;
+    const done = raidDoneOf(d.id);
+    return `<div class="raid-card${locked ? " locked" : ""}${defeated ? " defeated" : ""}" data-id="${d.id}">` +
+      `<div class="raid-head">` +
+      (icon ? `<img class="ricon" src="${icon}" alt="" onerror="this.remove()">` : "") +
+      `<span class="rname">${d.name}</span>` +
+      (clsIcon ? `<img class="rcls" src="${clsIcon}" alt="${d.cls}" title="${d.cls}">` : "") +
+      `<span class="rno">No.${i + 1}</span>` +
+      `<span class="rpct${pct <= 0.1 ? " low" : ""}">${(pct * 100).toFixed(1)}%</span></div>` +
+      `<div class="raid-barwrap">` +
+      `<div class="raid-bar"><i class="raid-fill" style="width:${(pct * 100).toFixed(2)}%"></i></div>` +
+      `<div class="raid-left"><span class="lbl">剩余</span><span class="rval">${fmtThousand(val)}</span></div>` +
+      `</div>` +
+      `<div class="raid-foot"><span class="rf-total">总量 ${fmtThousand(RAID_TOTAL)}</span>` +
+      `<span class="rf-right"><span class="rf-goal" data-id="${d.id}">刷取目标 <b>${fmtThousand(actRunsOf("final", d))}</b></span>` +
+      `<span class="rf-done">已刷取次数` +
+      `<input class="rf-done-in" type="number" min="0" step="1" value="${done}" data-id="${d.id}" title="自己填入已刷取的次数（仅记录显示，不参与计算）"></span></span></div>` +
+      (locked ? `<div class="raid-lock">再讨伐${needClear}根柱子后开放</div>`
+              : (defeated ? `<div class="raid-lock">已击破</div>` : "")) +
+      `</div>`;
+  }).join("");
+}
+// 底部「刷取目标」实时同步（用户在终章卡片里改副本次数后立即反映，不重建整个板块）
+function syncRaidRuns(){
+  document.querySelectorAll("#raidGrid .rf-goal").forEach(el => {
+    const d = DUNGEONS.find(x => x.id === el.dataset.id);
+    if (d) el.innerHTML = `刷取目标 <b>${fmtThousand(actRunsOf("final", d))}</b>`;
+  });
+}
+// 已刷取次数（手动填写，按柱子持久化到设置里）
+function raidDoneOf(id){
+  const m = getSettings().raidDone || {};
+  const v = Number(m[id]);
+  return isFinite(v) && v > 0 ? v : 0;
+}
+// 事件委托：已刷取次数输入即存（板块重建后仍保持）
+function bindRaidInputs(){
+  const box = document.getElementById("raidGrid");
+  if (!box || box._bound) return;
+  box._bound = true;
+  box.addEventListener("input", e => {
+    const el = e.target.closest(".rf-done-in");
+    if (!el) return;
+    try {
+      const st = getSettings();
+      st.raidDone = st.raidDone || {};
+      st.raidDone[el.dataset.id] = Math.max(0, parseInt(el.value, 10) || 0);
+      localStorage.setItem(SET_KEY, JSON.stringify(st));
+    } catch(err){}
+  });
+}
 function applyActUI(){
   const s = getSettings();
   const cur = curActivity(); // 校验后的活动 id（隐藏活动自动回落终章）
@@ -3923,6 +4107,13 @@ function applyActUI(){
   // 副标题：80586=无限池活动（重点产出在无限池）；80614=材料无限制兑换（南海大决战新活动形式）；其余显示柱子战规划
   const sub = document.getElementById("actSubtitle");
   if (sub) sub.textContent = cur === "80586" ? "无限池刷取规划" : (cur === "80614" ? "材料无限制兑换" : (cur === "80637" ? "冠位名代战刷取规划" : (cur === "80639" ? "活动周回刷取规划" : "柱子战刷取规划")));
+  // 柱子剩余数量板块：仅终章显示（8 根柱子手动填写剩余/总量）
+  const raidSec = document.getElementById("raidSection");
+  if (raidSec) {
+    const showRaid = cur === "final";
+    raidSec.style.display = showRaid ? "" : "none";
+    if (showRaid) buildRaid();
+  }
   // 南海活动：显示「助战加成2+__」输入框（加成影响肉/海鲜/菜实际每把掉落）
   const nb = document.getElementById("nanhaiBoost");
   if (nb) {
@@ -5019,6 +5210,7 @@ function recompute(){
     }
   }
   refreshRegRemain();
+  syncRaidRuns();
   scheduleAutoSave();
 }
 
@@ -5124,6 +5316,20 @@ function openAuthor(){
 // ===== 版本更新记录（每次「发布版」更新追加一条；本地多次测试迭代合并为发布版一次更新）=====
 // 每条分三类：add 新增 / opt 优化 / fix 修复
 const UPDATES = [
+  { v: "1.10.41", date: "2026-11-25",
+    add: [
+      "终章新增「柱子剩余数量」板块（位于用户等级·苹果与终章板块之间）：8 根柱子两列展示，静态渐变进度条（左紫右粉、棕色金边外框）+ 粉紫描边剩余数量 + 百分比，顶部显示柱名 / 职阶 / 编号",
+      "No.8「Ｍ·光谱」未开放机制：前 7 根柱子中任意 4 根剩余归零后才开放，此前整卡覆盖半透明灰色遮罩（可隐约看到底下内容）并居中显示「再讨伐X根柱子后开放」",
+      "柱子被讨伐完毕（剩余归零）时整卡覆盖同款灰色遮罩并显示「已击破」",
+      "每根柱子面板底部靠右显示「刷取目标」（该柱在终章设定的副本次数，实时同步）与「已刷取次数」（自己填写的输入框，按柱子保存）"
+    ],
+    opt: [],
+    fix: [
+      "修正柱子进度条内条与外框之间的缝隙：内条四周各外扩 2px 压到外框底下，左右两端圆角处也不再露出底色",
+      "去掉柱状进度条外框外侧的 1px 黑色描边（白天模式下过于突兀）",
+      "「已刷取次数」输入框收窄到约 4 位数宽度；未开放 / 已击破灰罩不透明度由 50% 提到 70%"
+    ]
+  },
   { v: "1.10.25", date: "2026-11-15",
     add: [
       "「真冬的水着特别篇」补建第 7 张副本卡：キンメガスラノッブ〔ねばねば級〕（Atlas 掉落数据已公开）"
