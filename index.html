@@ -205,6 +205,9 @@
   .rec-sum .rs-total{border-top:1px dashed var(--line); padding-top:5px; margin-top:3px; font-weight:700; color:var(--tc, var(--gold));}
   .rec-sum img{width:17px; height:17px; object-fit:contain; vertical-align:-4px; margin-right:3px;}
   .rec-sum .rs-empty{color:var(--muted); font-style:italic;}
+.rec-sum .rs-bal{border-top:1px dashed var(--line); padding-top:5px; margin-top:4px; font-size:12px;}
+.rec-sum .rs-bal .bal{margin-right:10px;}
+.rec-sum .rs-bal .bal.neg{color:#ef7a7a; font-weight:700;}
   .card input.cost-need{background:var(--panel2); color:var(--tc, var(--gold)); border:1px dashed var(--line); cursor:not-allowed; font-weight:600;}
   /* 双击剩余 → 活动产出/跳转弹窗：材料图+名 + 活动按钮（当前活动灰、冠位戴冠战=职介图标） */
   .remjump{display:flex; flex-direction:column; align-items:center; gap:12px; width:100%;}
@@ -238,6 +241,9 @@
     border:1px solid rgba(91,141,239,.35);
   }
   .apinfo .rank.top{background:rgba(232,182,76,.16); color:var(--gold); border-color:rgba(232,182,76,.4);}
+.apinfo.gray{opacity:.72;}
+.apinfo.gray b{color:var(--muted);}
+.apinfo .apnote{font-size:11px; opacity:.8; margin-left:4px;}
   .card-head .runsctrl{display:flex; align-items:center; justify-content:flex-end; flex-wrap:wrap; gap:6px; font-size:13px; color:var(--muted);}
   .card-head .runsctrl input{
     width:64px; background:var(--panel2); border:1px solid var(--line); color:var(--gold);
@@ -739,10 +745,12 @@
   .matpick-item{display:flex; flex-direction:column; align-items:center; width:66px; padding:6px 4px; border:1px solid var(--line); border-radius:6px; cursor:pointer; font-size:11px; text-align:center; background:var(--panel2);}
   .matpick-item:hover{background:var(--gold); color:#1a1205; border-color:var(--gold);}
   .matpick-item img{width:44px; height:44px; object-fit:contain;}
+.matpick-item .matpick-ph{width:44px; height:44px; display:flex; align-items:center; justify-content:center; font-size:18px; color:var(--muted); background:var(--panel2); border-radius:4px;}
   /* 密集视图网格（类 Chaldea 素材图：图标铺满格子，数字叠加右下角） */
   .densegrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(64px,1fr)); gap:8px; padding:14px 16px;}
   .dense-item{position:relative; background:var(--panel2); border:1px solid var(--line); border-radius:8px; overflow:hidden; aspect-ratio:66/72;}
   .dense-item img{width:100%; height:100%; object-fit:contain; display:block;}
+.dense-item .dense-ph{width:100%; height:100%; display:flex; align-items:center; justify-content:center; font-size:20px; color:var(--muted);}
   .dense-item .dnums{position:absolute; right:4px; bottom:3px; text-align:right; font-size:10px; line-height:1.35; font-variant-numeric:tabular-nums; background:rgba(0,0,0,.5); color:#fff; padding:1px 4px; border-radius:4px; max-width:calc(100% - 8px); overflow:hidden;}
   .dense-item .dnums .inv{color:#fff;}
   .dense-item .dnums .rem{color:#8fdc9a;}
@@ -1692,7 +1700,7 @@ const MAT_QUALITY = {
   "血泪": 2, "圣水": 2, "黑兽脂": 2, "羽毛": 1, "黄金釜": 2, "混沌爪": 2
 };
 // 版本号：每次功能/修复完成后递增（vX.Y.Z）
-const VERSION = "1.10.41";
+const VERSION = "1.10.47";
 // 设置默认值：隐藏特殊/技能/再临/其他 默认关闭（五类常规材料栏常显，开启后隐藏对应分类的掉落行与页签）
 const DEFAULT_SETTINGS = {
   storm: true, useAct: true, autoOverflow: true, hideDisableBox: false,
@@ -2561,7 +2569,157 @@ function lotteryGain(cnt, key){
   }
   return g;
 }
-// 由用户设定的刷取次数计算无限池累计获取（item id -> 数量）
+// 无限池「一池」奖励的 AP 价值：口径与材料表完全一致——手动禁用（m[3]）、已富余（自动禁用溢出）都剔除
+// 量子的 m[1] 以 M 为单位（2.0 = 200 万 QP），换算后乘 AP；其余按个数
+function lotteryPoolApValue(pool, storm){
+  const items = LOTTERY_POOLS[String(pool)] || LOTTERY_POOLS["1"] || [];
+  const st = getSettings();
+  const autoOverflow = !!st.autoOverflow;
+  const useAct = st.useAct !== false;
+  let total = 0;
+  items.forEach(m => {
+    if (m[3]) return;                                  // 手动禁用
+    const ap = curMeta(m[0], storm).ap;
+    if (!(ap > 0)) return;
+    const c = isCommonKey(m[0]) ? commonOf(m[0]) : null;
+    const src = matSrc(m[0]);
+    const inv = c ? (c.inv || 0) : (src ? (src.m[src.inv] || 0) : (m[4] || 0));
+    const need = c ? (c.need || 0) : (src ? (src.m[src.need] || 0) : (m[5] || 0));
+    const act = c ? (c.act || 0) : (src ? (src.m[src.inv === 4 ? 6 : 3] || 0) : (m[6] || 0));
+    const gain = includedGain(m[0]);
+    if (autoOverflow && (inv + (useAct ? act : 0) + gain) >= (need + redundOf(m[0]))) return; // 已富余
+    const qty = (m[0] === "量子") ? m[1] * 1e6 : m[1];
+    total += qty * ap;
+  });
+  return total;
+}
+// 绑定无限池的副本：每把魔芒石有效掉率（每池固定 600 个；10 加成下默认 244.84）
+function lotteryStoneRate(d){
+  const row = ((d && d.mats) || []).find(m => m[0] === "魔芒石");
+  const r = row ? ovRate(row, d) : 0;
+  return r > 0 ? r : 244.84;
+}
+// ===== 80614 南海：盛料 → 料理配方 折算 =====
+function nanhaiDungeon(){ return NANHAI_DUNGEONS[0]; }
+// 该副本每把掉多少盛料（含助战 2+基础 与 礼装掉落加成后的有效掉率）
+function nanhaiCurrencyPerRun(){
+  const dun = nanhaiDungeon();
+  const out = {肉:0, 海鲜:0, 菜:0};
+  ((dun && dun.mats) || []).forEach(m => {
+    const s = COST_KEY[m[0]];
+    if (!s) return;
+    const r = ovRate(m, dun);
+    out[s] += r > 0 ? r : (m[1] || 0); // 掉率被改成 0 时回退原始掉率，避免「需刷次数」算成 0
+  });
+  return out;
+}
+// 单个料理小组「换 1 次」的期望 AP（仅供配方卡灰字显示；已富余/需求为 0 的材料不计）
+function recipePoolApValue(d, i, storm){
+  const p = (d && d.pools || [])[i];
+  if (!p) return 0;
+  const st = getSettings();
+  const autoOverflow = !!st.autoOverflow;
+  const useAct = st.useAct !== false;
+  let total = 0;
+  (p.mats || []).forEach(m => {
+    if (m[3]) return;
+    const ap = curMeta(m[0], storm).ap;
+    if (!(ap > 0)) return;
+    const c = isCommonKey(m[0]) ? commonOf(m[0]) : null;
+    const src = matSrc(m[0]);
+    const inv = c ? (c.inv || 0) : (src ? (src.m[src.inv] || 0) : 0);
+    const nd = c ? (c.need || 0) : (src ? (src.m[src.need] || 0) : 0);
+    const act = c ? (c.act || 0) : (src ? (src.m[src.inv === 4 ? 6 : 3] || 0) : 0);
+    const gain = includedGain(m[0]);
+    if (autoOverflow && (inv + (useAct ? act : 0) + gain) >= (nd + redundOf(m[0]))) return;
+    total += m[1] * ap;
+  });
+  return total;
+}
+// 整段规划：料理配方产出 × AP，只计仍缺的部分；盛料不够时按可得比例缩放
+function nanhaiRecipeExtra(storm){
+  const dun = nanhaiDungeon();
+  const perRun = nanhaiCurrencyPerRun();
+  const runs = actRunsOf("80614", dun);
+  const need = recipeTotalCost();
+  let factor = 1, shortKey = "";
+  ["肉", "海鲜", "菜"].forEach(s => {
+    if (need[s] <= 0) return;
+    const f = (perRun[s] * runs) / need[s];
+    if (f < factor) { factor = f; shortKey = s; }
+  });
+  const short = factor < 1;
+  factor = Math.max(0, factor);
+  const prodRaw = {}, prod = {};
+  NANHAI_RECIPE_DUNGEONS.forEach(rd => (rd.pools || []).forEach((p, i) => {
+    const rn = recipePoolRunsByAid("80614", rd, i);
+    if (rn <= 0) return;
+    (p.mats || []).forEach(m => {
+      prodRaw[m[0]] = (prodRaw[m[0]] || 0) + rn * m[1];
+      prod[m[0]] = (prod[m[0]] || 0) + rn * factor * m[1];
+    });
+  }));
+  const st = getSettings();
+  const en = st.actEnabled || {};
+  const incl = !!en["80614"] || (st.curActGain !== false && (st.curAct || "final") === "80614");
+  let ap = 0; const detail = [];
+  Object.keys(prod).forEach(k => {
+    const meta = curMeta(k, storm);
+    if (!(meta.ap > 0)) return;
+    const c = isCommonKey(k) ? commonOf(k) : null;
+    const src = matSrc(k);
+    const inv = c ? (c.inv || 0) : (src ? (src.m[src.inv] || 0) : 0);
+    const nd = c ? (c.need || 0) : (src ? (src.m[src.need] || 0) : 0);
+    // 缺口按「刨去本活动配方自身产出」计，避免把自己的产出算成缺口
+    const gapBefore = nd + redundOf(k) - inv - (includedGain(k) - (incl ? (prodRaw[k] || 0) : 0));
+    const useful = Math.min(prod[k], Math.max(0, gapBefore));
+    if (useful > 0) { const v = useful * meta.ap; ap += v; detail.push({ k: k, q: useful, ap: v }); }
+  });
+  return { runs, perRun, need, prod, ap, factor, short, shortKey, detail };
+}
+// 配方换取次数 → 副本把数：需求超过当前把数就抬到「够用」，永不回降（用户手填更大的规划保留）
+// onlyIfZero 已废弃（保留形参仅为兼容旧调用），现在任何情况下只要 cur < req 就补足
+function syncNanhaiDungeonRuns(){
+  const dun = nanhaiDungeon();
+  const req = nanhaiReqRuns();
+  if (req <= 0) return;
+  const cardEl = Array.prototype.slice.call(document.querySelectorAll("#grid .card"))
+    .filter(c => (c._d || {}).id === dun.id)[0];
+  if (!cardEl) return;
+  const ri = cardEl.querySelector(".runsInput");
+  if (!ri) return;
+  const cur = Math.max(0, parseInt(ri.value) || 0);
+  if (cur >= req) return;
+  // 把数变大后掉落加成上升、每把盛料变多，所需把数会略降 → 回代微调到自洽值（绝不低于用户已填的数）
+  let want = req;
+  for (let i = 0; i < 4; i++) {
+    saveActRunsFor("80614", dun.id, want);
+    const r2 = nanhaiReqRuns();
+    const nxt = Math.max(cur, r2);
+    if (r2 <= 0 || nxt === want) break;
+    want = nxt;
+  }
+  ri.value = want;
+  saveActRunsFor("80614", dun.id, want);
+  // 同步刷新同一张卡上的「≈ 金苹果」与「需刷」列（随 recompute 一起走，不需要额外事件）
+}
+// 按全部配方消耗反解所需副本把数（掉落加成随把数增长，少量迭代求自洽）
+function nanhaiReqRuns(){
+  const need = recipeTotalCost();
+  if (!(need.肉 + need.海鲜 + need.菜 > 0)) return 0;
+  let req = 0;
+  for (let i = 0; i < 6; i++) {
+    const perRun = nanhaiCurrencyPerRun();
+    let next = 0;
+    ["肉", "海鲜", "菜"].forEach(s => {
+      if (need[s] > 0 && perRun[s] > 0) next = Math.max(next, Math.ceil(need[s] / perRun[s]));
+    });
+    if (next === req || next <= 0) { req = next > 0 ? next : req; break; }
+    req = next;
+  }
+  return req;
+}
+
 // 注：Chaldea 导入时不再累加无限池材料（池数直接填入网页刷取次数，由网页刷取次数驱动获取），本函数当前未使用
 function calcLotteries(lotteries){
   const act = {};
@@ -2908,7 +3066,7 @@ function confirmChaldea(){
       if (!dd || !(dd.lottery || dd.lotteryLink)) return;
       const ri = c.querySelector(".runsInput");
       if (!ri) return;
-      ri.value = dd.lottery ? cb : Math.ceil(cb * 600 / 244.84);
+      ri.value = dd.lottery ? cb : Math.ceil(cb * 600 / lotteryStoneRate(dd));
       // 导入填写的刷取次数同步写入 actRuns（actGain 从 actRuns 读取，否则刷新后丢失）
       saveActRunsFor("80586", dd.id, ri.value);
     });
@@ -3484,7 +3642,35 @@ function curAid(){
   const cur = st.curAct || "final";
   return cur === "coronation" ? "coronation:" + (st.coronationClass || "saber") : cur;
 }
+// 材料显示名 → data.js 短键（如「虚影之尘」→「黑灰」、「疯狂的残渣」→「残渣」）
+// 根因：DENSE_ORDER 存的是显示名，旧版「添加材料」直接把它当键写入 → metaOf 取不到 → img 为空、图标空白且不参与计算
+function cdCanon(key){
+  if (MATERIALS[key]) return key;
+  for (const k in MATERIALS) { if (MATERIALS[k] && MATERIALS[k].name === key) return k; }
+  return key;
+}
+let _cdMigrated = false;
+// 一次性把历史存档里写成全名的自定义掉落键归一为短键（重复项取较大值，避免数量翻倍）
+function migrateCustomKeys(){
+  if (_cdMigrated) return;
+  _cdMigrated = true;
+  let all;
+  try { all = JSON.parse(localStorage.getItem("chaldea_custom") || "{}"); } catch(e) { return; }
+  let changed = false;
+  Object.keys(all).forEach(aid => {
+    const src = all[aid] || {}, dst = {};
+    Object.keys(src).forEach(k => {
+      const ck = cdCanon(k), v = src[k];
+      if (ck !== k) changed = true;
+      if (dst[ck] === undefined) dst[ck] = v;
+      else if (typeof v === "number" && typeof dst[ck] === "number" && v > dst[ck]) dst[ck] = v;
+    });
+    all[aid] = dst;
+  });
+  if (changed) { try { localStorage.setItem("chaldea_custom", JSON.stringify(all)); } catch(e) {} }
+}
 function customDropsFor(){
+  migrateCustomKeys();
   const all = {};
   try { Object.assign(all, JSON.parse(localStorage.getItem("chaldea_custom") || "{}")); } catch(e) {}
   return all[curAid()] || null;
@@ -3529,9 +3715,12 @@ function renderCustomDrops(){
   dg.innerHTML = Object.entries(mats).length
     ? Object.entries(mats).map(([k, n]) => {
         const meta = metaOf(k);
+        const icon = meta.img
+          ? `<img src="${meta.img}" alt="" onerror="this.remove()" onclick="openCdEdit('${k}')">`
+          : `<span class="dense-ph" onclick="openCdEdit('${k}')">${(dispName(k) || k).slice(0, 1)}</span>`;
         return `<div class="dense-item" title="${dispName(k)}：${n}">` +
           delBtn(k) +
-          `<img src="${meta.img}" alt="" onerror="this.remove()" onclick="openCdEdit('${k}')">` +
+          icon +
           `<div class="dnums"><div class="inv">${n}</div></div></div>`;
       }).join("")
     : emptyTxt;
@@ -3566,15 +3755,21 @@ function openCustomAdd(){
   const aid = curAid();
   const all = {};
   try { Object.assign(all, JSON.parse(localStorage.getItem("chaldea_custom") || "{}")); } catch(e) {}
-  const have = new Set(Object.keys(all[aid] || {}));
-  const pool = new Set();
+  const have = new Set(Object.keys(all[aid] || {}).map(k => cdCanon(k)));
+  const pool = [], seenK = new Set();
   [...DENSE_ORDER, ...REGULAR_MATS.map(m => m[0]), ...GEM_MATS.map(m => m[0]),
-   ...SPECIAL_MATS.map(m => m[0]), ...APPLES.map(m => m[0])].forEach(k => pool.add(k));
-  const keys = [...pool].filter(k => !have.has(k)).sort((a, b) => denseRank(a) - denseRank(b));
+   ...SPECIAL_MATS.map(m => m[0]), ...APPLES.map(m => m[0])].forEach(k0 => {
+    const k = cdCanon(k0);   // DENSE_ORDER 是显示名，必须先换成 data.js 短键，否则取不到图标
+    if (!seenK.has(k)) { seenK.add(k); pool.push(k); }
+  });
+  const keys = pool.filter(k => !have.has(k)).sort((a, b) => denseRank(a) - denseRank(b));
   openModal(`<h3>添加材料${cur === "coronation" ? "（" + ccName + "）" : ""}</h3>` +
     (keys.length ? `<div class="matpicker">${keys.map(k => {
       const meta = metaOf(k);
-      return `<div class="matpick-item" onclick="addCustomMat('${k}')"><img src="${meta.img}" alt="" onerror="this.remove()"><span>${dispName(k)}</span></div>`;
+      const icon = meta.img
+        ? `<img src="${meta.img}" alt="" onerror="this.remove()">`
+        : `<span class="matpick-ph">${(dispName(k) || k).slice(0, 1)}</span>`;
+      return `<div class="matpick-item" onclick="addCustomMat('${k}')">${icon}<span>${dispName(k)}</span></div>`;
     }).join("")}</div>` : `<p style="padding:12px;color:#888">当前活动的材料已全部添加</p>`));
 }
 // 添加一种材料到当前活动
@@ -4635,13 +4830,18 @@ function build(){
     if (_initRuns != null) d._manualRuns = true;
     // Extra 变种副本：标题显示当前变种名（火Ⅶ/地Ⅶ、風Ⅶ/水Ⅶ）
     const dispN = (d.variants && d.variants.length > 1) ? d.name + " " + d.variants[d.variant].name : d.name;
+    // 无限池卡文案里的每把魔芒石个数按有效掉率实时取值（不写死 244.84）
+    const _ldRate = d.lottery ? (function(){
+      const ld = activeDungeons().find(x => x.lotteryLink);
+      return ld ? fmt1(lotteryStoneRate(ld)) : "";
+    })() : "";
     head.innerHTML =
       `<div class="hl"><div class="name"><img class="pillar-icon" src="${PILLAR_ICONS[d.id] || ""}" alt="" onerror="this.remove()">${dispN} ${clsIconHtml}` +
       `<span class="badge aptop" title="当前AP价值最高" style="display:none">AP TOP!</span></div>` +
       `<div class="sub">${d.id}</div>${poolBar}${d.recipe ? `<div class="rec-cost">消耗：${costHtml(d.pools[d.pool].cost, 1)}</div>` : ""}</div>` +
       ((d.lottery || d.lotteryLink || d.recipe)
         ? (d.lottery
-          ? `<div class="runsctrl">预期池数 <input type="number" class="runsInput" min="0" step="1" value="${_initRuns != null ? _initRuns : 0}" title="预期池数（无限池刷取次数）；与下方副本次数按公式互相换算（每池600魔芒石，10加成每把244.84个）"> <button class="runsAuto" title="清零：将预期池数复位为 0 次">↺</button></div>`
+          ? `<div class="runsctrl">预期池数 <input type="number" class="runsInput" min="0" step="1" value="${_initRuns != null ? _initRuns : 0}" title="预期池数（无限池刷取次数）；与下方副本次数按公式互相换算（每池600魔芒石${_ldRate ? "，10加成每把" + _ldRate + "个" : ""}）"> <button class="runsAuto" title="清零：将预期池数复位为 0 次">↺</button></div>`
           : (d.recipe
               ? `<div class="runsctrl">换取次数 <input type="number" class="runsInput" min="0" step="1" value="${_initRuns != null ? _initRuns : 0}" title="换取次数（料理配方，消耗蔬菜/海鲜/肉换取随机材料；各材料按掉率期望产出，计入活动获取与剩余）"> <button class="runsAuto" title="清零：将换取次数复位为 0 次">↺</button></div>`
               : `<div class="runsctrl">副本次数 <input type="number" class="runsInput" min="0" step="1" value="${_initRuns != null ? _initRuns : 0}" title="副本次数（副本把数，40AP/把）；与上方预期池数按公式互相换算，改任一边自动计算另一边"> <button class="runsAuto" title="清零：将副本次数复位为 0 次">↺</button>` +
@@ -4798,7 +4998,11 @@ function build(){
     const foot = document.createElement("div");
     foot.className = "card-foot";
     foot.innerHTML = "瓶颈材料：<b class='bn'>—</b>　·　AP贡献最高：<b class='topc'>—</b>" +
-      `<div class="apinfo">每局AP价值 ≈ <b class="apNum">0</b> <span class="rank">—</span></div>`;
+      (d.lottery
+        ? `<div class="apinfo gray">每池 AP 价值 ≈ <b class="apNum">0</b> <span class="rank">—</span><span class="apnote">已计入可刷副本</span></div>`
+        : (d.recipe
+          ? `<div class="apinfo gray">每次换取 AP ≈ <b class="apNum">—</b> <span class="rank">—</span><span class="apnote">已计入副本</span></div>`
+          : `<div class="apinfo">每局AP价值 ≈ <b class="apNum">0</b> <span class="rank">—</span></div>`));
     card.appendChild(foot);
 
     // 料理配方卡：表格下方增加「消耗需求总结」（各小组换取次数所需材料 + 大组合计），recompute 更新
@@ -4836,8 +5040,8 @@ function build(){
         if (!dd || !(dd.lottery || dd.lotteryLink)) return;
         const ri = c.querySelector(".runsInput");
         if (!ri) return;
-        if (d.lottery && dd.lotteryLink) ri.value = Math.ceil(v * 600 / 244.84);        // 池数 → 副本把数
-        else if (d.lotteryLink && dd.lottery) ri.value = Math.floor(v * 244.84 / 600);  // 把数 → 池数
+        if (d.lottery && dd.lotteryLink) ri.value = Math.ceil(v * 600 / lotteryStoneRate(dd));        // 池数 → 副本把数
+        else if (d.lotteryLink && dd.lottery) ri.value = Math.floor(v * lotteryStoneRate(d) / 600);  // 把数 → 池数
         // 程序赋值不触发 input → 同步写入 actRuns，否则刷新后联动值丢失（actGain 读不到）
         saveActRunsFor(getSettings().curAct || "final", dd.id, ri.value);
       });
@@ -4846,6 +5050,8 @@ function build(){
       d._manualRuns = true;
       saveActRuns();
       syncLotteryInput(card);
+      // 南海：填了配方换取次数 → 自动把副本把数补到「够用」（只增不减）
+      if (d.recipe) syncNanhaiDungeonRuns();
       recompute();
     });
     card.querySelector(".runsAuto").addEventListener("click", () => {
@@ -4875,6 +5081,9 @@ function build(){
       });
     });
   });
+  // 南海：页面重建后若配方已有次数而副本把数还是 0（例如填写次数时还是旧版本、或刷新后），自动补足一次
+  // 南海：每次重算都把副本把数抬到配方所需（已填 400 而配方要 500 时会升到 500；填得更大则保留）
+  if ((getSettings().curAct || "final") === "80614") syncNanhaiDungeonRuns();
   recompute();
 }
 
@@ -4902,6 +5111,9 @@ function recompute(){
   document.querySelectorAll(".ratetoggle").forEach(b => b.textContent = rateMode ? "AP效率" : "掉率");
   const cards = document.querySelectorAll("#grid .card");
   const DS = activeDungeons();
+  // 南海：每次重算都检查一次（把数不足配方所需就抬上去；已填更大的规划不动）
+  if ((getSettings().curAct || "final") === "80614") syncNanhaiDungeonRuns();
+  const lotteryLinkD = DS.find(x => x.lotteryLink); // 绑定无限池的副本（供文案与折算取有效掉率）
   const apCap = apCapByLevel(document.getElementById("userLvl").value);
   let maxRuns = 0;
   cards.forEach((card, di) => {
@@ -5060,8 +5272,11 @@ function recompute(){
             linkEl.title += "（自动禁用：不刷也已富余，不计入AP价值）";
           } else {
             const contrib = rate * cm.ap;
-            apTotal += contrib;
-            if (contrib > (topC >= 0 ? ovRate(d.mats[topC], d) * curMeta(d.mats[topC][0], storm).ap : -1)) topC = mi;
+            // 无限池卡是「展示卡」：奖励来自可刷副本消费的魔芒石，不单独算每局AP价值
+            if (!d.lottery) {
+              apTotal += contrib;
+              if (contrib > (topC >= 0 ? ovRate(d.mats[topC], d) * curMeta(d.mats[topC][0], storm).ap : -1)) topC = mi;
+            }
           }
         }
       }
@@ -5073,7 +5288,8 @@ function recompute(){
     if (d.lottery) {
       // 无限池：输入为预期池数，_runs 即池数（lotteryGain 累计用）
       d._runs = curRuns;
-      runsInput.title = "预期池数（无限池刷取次数）；与下方副本次数按公式互相换算（每池600魔芒石，10加成每把244.84个）";
+      const rateTxt = lotteryLinkD ? "，10加成每把" + fmt1(lotteryStoneRate(lotteryLinkD)) + "个" : "";
+      runsInput.title = "预期池数（无限池刷取次数）；与下方副本次数按公式互相换算（每池600魔芒石" + rateTxt + "）";
     } else if (d.recipe) {
       // 料理配方卡：输入为换取次数（消耗蔬菜/海鲜/肉换取随机材料；按掉率期望产出，计入活动获取）
       d._runs = curRuns;
@@ -5131,12 +5347,56 @@ function recompute(){
       needEl.classList.toggle("hot", r > 0 && r === maxNeed);
     });
 
-    card.querySelector(".apNum").textContent = apTotal.toFixed(1);
-    d._ap = apTotal;
+    if (d.lottery) {
+      // 无限池卡：显示「每池 AP 价值」（口径同材料表，已剔除富余/禁用），该价值已折算进可刷副本
+      const boxAp = lotteryPoolApValue(d.pool, storm);
+      d._boxAp = boxAp;
+      d._ap = 0; // 不参与副本 AP 排名
+      card.querySelector(".apNum").textContent = boxAp.toFixed(1);
+      const info = card.querySelector(".apinfo");
+      if (info) info.title = "当前显示池（" + (d.pool === "10+" ? "10 池以后" : "第 " + d.pool + " 池") + "）每箱奖励的 AP 价值；已富余/已禁用的材料不计。\n这笔收益已按魔芒石折算进可刷副本的「每局AP价值」，此处不重复计入排名";
+    } else {
+      // 绑定无限池的副本：额外摊入无限池收益（每把魔芒石 ÷ 每池 600 × 每池 AP 价值）
+      let boxGain = 0;
+      if (d.lotteryLink) {
+        const poolD = DS.find(x => x.lottery);
+        const boxAp = poolD ? (poolD._boxAp != null ? poolD._boxAp : lotteryPoolApValue(poolD.pool, storm)) : 0;
+        if (poolD) poolD._boxAp = boxAp;
+        boxGain = (lotteryStoneRate(d) / 600) * boxAp;
+        apTotal += boxGain;
+        const info = card.querySelector(".apinfo");
+        if (info) info.title = "每局AP价值 ≈ " + apTotal.toFixed(1) + " AP\n= 直接掉落 " + (apTotal - boxGain).toFixed(1) + " AP + 无限池折算 " + boxGain.toFixed(1) + " AP\n无限池折算：每把魔芒石 " + fmt1(lotteryStoneRate(d)) + " 个 ÷ 每池 600 个 × 每池 AP 价值 " + boxAp.toFixed(1) + " AP（池内富余/禁用的材料不计）";
+      }
+      // 南海：盛料按料理配方产出折算成额外 AP（只有用户填了配方换取次数才会有）
+      if (d.id === "Nanhai-909") {
+        const ex = nanhaiRecipeExtra(storm);
+        let nhExtra = 0;
+        if (ex.runs > 0 && ex.ap > 0) { nhExtra = ex.ap / ex.runs; apTotal += nhExtra; }
+        const info = card.querySelector(".apinfo");
+        if (info) {
+          let t = "每局AP收益 ≈ " + apTotal.toFixed(1) + " AP";
+          if (nhExtra > 0) t += "\n= 直接掉落 " + (apTotal - nhExtra).toFixed(1) + " AP + 料理配方折算 " + nhExtra.toFixed(1) + " AP";
+          t += "\n料理配方：本规划产出合计 " + ex.ap.toFixed(1) + " AP ÷ " + ex.runs + " 把";
+          if (ex.short) t += "\n⚠ 盛料不足，按可得量 " + (ex.factor * 100).toFixed(1) + "% 折算（缺口在「" + ex.shortKey + "」）";
+          else if (!Object.keys(ex.prod).length) t += "\n（尚未填写料理配方换取次数，暂无额外收益）";
+          else if (ex.ap <= 0) t += "\n（配方已有产出，但产出的材料都不缺，折算为 0）";
+          t += "\n盛料每把：肉 " + fmt1(ex.perRun.肉) + " / 海鲜 " + fmt1(ex.perRun.海鲜) + " / 菜 " + fmt1(ex.perRun.菜) + "（含当前助战与礼装加成）";
+          info.title = t;
+        }
+      }
+      card.querySelector(".apNum").textContent = apTotal.toFixed(1);
+      d._ap = apTotal;
+    }
     card.querySelector(".bn").textContent = !(d.mats && d.mats.length) ? "掉落数据待补齐" : (bnIndex >= 0 ? dispName(d.mats[bnIndex][0]) + "（" + maxNeed + " 次）" : "无（材料均已富余）");
     card.querySelector(".topc").textContent = topC >= 0 ? dispName(d.mats[topC][0]) + "（" + (ovRate(d.mats[topC], d) * curMeta(d.mats[topC][0], storm).ap).toFixed(1) + "AP）" : "—";
-    // 料理配方卡：消耗需求总结（各小组换取次数所需材料 + 大组合计）
+    // 料理配方卡：消耗需求总结（各小组换取次数所需材料 + 大组合计）+ 盛料余额
     if (d.recipe) {
+      // 灰字：当前小组换 1 次的期望 AP（已富余材料不计）
+      const perEx = recipePoolApValue(d, d.pool, storm);
+      card.querySelector(".apNum").textContent = perEx > 0 ? perEx.toFixed(1) : "—";
+      d._ap = 0;
+      const apInfo = card.querySelector(".apinfo");
+      if (apInfo) apInfo.title = "当前小组（" + (d.pools[d.pool] ? d.pools[d.pool].name : "") + "）换 1 次的期望 AP；已富余 / 需求为 0 的材料不计。\n整段规划的配方产出 AP 已并入「" + NANHAI_DUNGEONS[0].name + "」的每局AP收益，此处不重复计入";
       const sumEl = card.querySelector(".rec-sum");
       if (sumEl) {
         const totals = {};
@@ -5149,26 +5409,41 @@ function recompute(){
           }
         });
         const keys = Object.keys(totals);
+        // 盛料余额：副本把数 × 每把掉落 − 全活动配方合计消耗（负数 = 填的次数做不出来）
+        const perRunN = nanhaiCurrencyPerRun();
+        const runsN = actRunsOf("80614", NANHAI_DUNGEONS[0]);
+        const allNeed = recipeTotalCost();
+        const needTotal = allNeed.肉 + allNeed.海鲜 + allNeed.菜;
+        const needRuns = nanhaiReqRuns();
+        const runBadge = needTotal > 0
+          ? `<span class="bal${runsN < needRuns ? " neg" : ""}">按当前配方共需 ${needRuns} 把${runsN < needRuns ? "（当前 " + runsN + " 把，不足）" : runsN > needRuns ? "（当前 " + runsN + " 把，富余）" : ""}</span>`
+          : "";
+        const balLine = `<div class="rs-bal"><b>盛料余额</b>（${runsN} 把 × 每把掉落 − 全部配方消耗${needTotal > 0 ? "" : "；尚未填写换取次数"}）：` +
+          ["肉", "海鲜", "菜"].map(s => {
+            const avail = perRunN[s] * runsN, used = allNeed[s], left = avail - used;
+            return `<span class="bal${left < 0 ? " neg" : ""}">${s} ${fmtInt(avail)} − ${fmtInt(used)} = ${fmtInt(left)}</span>`;
+          }).join("　") + `　${runBadge}</div>`;
         sumEl.innerHTML = `<div class="rs-title">消耗需求（各小组换取次数所需材料）</div>` +
           (keys.length
             ? lines + `<div class="rs-total">合计：${keys.map(k => `<img src="${metaOf(COST_META[k]).img}" alt="" onerror="this.remove()">${fmtInt(totals[k])} ${k}`).join(" + ")}</div>`
-            : `<span class="rs-empty">尚未填写任何小组的换取次数</span>`);
+            : `<span class="rs-empty">尚未填写任何小组的换取次数</span>`) + balLine;
       }
     }
     if (maxNeed > maxRuns) maxRuns = maxNeed;
   });
-  // 排名（按每局 AP 价值）
-  const order = DS.map((d, i) => i).sort((a, b) => DS[b]._ap - DS[a]._ap);
+  // 排名（按每局 AP 价值）：只在「真实可刷副本」之间比较；
+  // 无限池、料理配方等展示/换取卡不参与排名，也不显示 AP TOP
+  const realIdx = DS.map((d, i) => i).filter(i => !DS[i].lottery && !DS[i].recipe);
+  const order = realIdx.slice().sort((a, b) => DS[b]._ap - DS[a]._ap);
   const rankOf = {};
   order.forEach((idx, r) => rankOf[idx] = r + 1);
   cards.forEach((card, di) => {
     const rank = rankOf[di];
     const el = card.querySelector(".rank");
-    el.textContent = "#" + rank;
-    el.classList.toggle("top", rank <= 3);
-    // AP TOP 标志仅终章显示（其他活动副本排名无意义）
-    const isFinal = (getSettings().curAct || "final") === "final";
-    card.querySelector(".badge.aptop").style.display = (isFinal && rank === 1) ? "" : "none";
+    el.textContent = (rank > 0) ? "#" + rank : "—";
+    el.classList.toggle("top", rank > 0 && rank <= 3);
+    // AP TOP 只在同一活动内 ≥2 个真实副本时对比才有意义（单副本活动不显示）
+    card.querySelector(".badge.aptop").style.display = (rank === 1 && realIdx.length >= 2) ? "" : "none";
     card.querySelector(".bar i").style.width = ((card._d || DS[di])._runs / (maxRuns || 1) * 100) + "%";
   });
   // 副本数量/合计需刷只统计真实副本（排除无限池与料理配方卡，其换取/池数不算副本把数）
@@ -5316,6 +5591,63 @@ function openAuthor(){
 // ===== 版本更新记录（每次「发布版」更新追加一条；本地多次测试迭代合并为发布版一次更新）=====
 // 每条分三类：add 新增 / opt 优化 / fix 修复
 const UPDATES = [
+  { v: "1.10.47", date: "2026-11-25",
+    add: [],
+    opt: ["配方次数 → 副本把数改为「按配方所需抬到够用」：已填 400 把而配方要 500 把时自动升到 500，填得更大则不会被拉低"],
+    fix: [
+      "此前只在把数为 0 时才补，已填 400 后无论配方要多少都停在 400；现改为每次重算都检查，把数不足需求就升到需求值",
+      "盛料余额行的「按当前配方共需 N 把」与自动补足用同一套算法（nanhaiReqRuns），两者不再出现数值不一致；当前把数高于需求时标注「富余」"
+    ]
+  },
+  { v: "1.10.46", date: "2026-11-25",
+    add: [],
+    opt: [],
+    fix: [
+      "「配方次数 → 副本把数」再加一道保险：每次重算时都检查一次（不再只依赖输入事件），配方有次数而把数仍为 0 时自动补足",
+      "盛料每把掉落若因掉率被改成 0 而算不出，回退用数据原始掉率，避免「需要刷取次数」算成 0",
+      "配方卡「盛料余额」行补充显示「还需 N 把」，把数少于它时标红，可直接看出自动补足有没有生效"
+    ]
+  },
+  { v: "1.10.45", date: "2026-11-25",
+    add: [],
+    opt: [],
+    fix: [
+      "「盛料余额」改为常显：即使还没填配方换取次数也会显示（此时消耗为 0 并注明「尚未填写换取次数」），不用先填次数才看得到",
+      "补齐「配方次数 → 副本把数」的漏触发：此前只在编辑配方次数的那一刻联动，页面刷新、切换池号或次数是旧版本填的情况下副本把数不会补；现在页面重建后若配方已有次数而副本把数仍为 0 会自动补足（把数已被设定过则保持不动）"
+    ]
+  },
+  { v: "1.10.44", date: "2026-11-25",
+    add: [
+      "迦勒底南海大作战（80614）：「盛料 → 料理配方」收益并入副本每局AP收益。默认（未填配方换取次数）不显示额外收益；填了之后按配方产出、只计仍缺的材料折算成 AP，摊入该副本每局AP收益",
+      "配方换取次数 → 副本刷取次数自动补足：填了配方次数后，副本把数会自动补到「盛料刚好够用」（只增不减，不会覆盖更大的规划）",
+      "配方卡底部新增「盛料余额」：把数 × 每把掉落 − 全部配方消耗，负数标红，一眼看出填的次数做不做得出来"
+    ],
+    opt: [],
+    fix: [
+      "料理配方卡改为灰色「每次换取 AP ≈ X」（单次兑换的期望 AP，已富余材料不计），整段产出已并入副本，不再单独参与排名",
+      "盛料不足时的处理：按可得量等比缩放（不再凭空算出收益），tooltip 提示缺口在「肉 / 海鲜 / 菜」哪一项",
+      "商店兑换（人魂ぐらす / 怪々みんさー / 百鬼やちむん）属限购有限收益，按口径不计入 AP 价值；三种盛料之间 4:1 互换暂不参与估值"
+    ]
+  },
+  { v: "1.10.43", date: "2026-11-25",
+    add: [],
+    opt: [],
+    fix: [
+      "「每局AP价值」口径修正（以最终物资补给作战为例）：无限池卡不再按箱内材料单独算「每局AP价值」（池奖励是钻研战刷取换来的，不是可刷副本本身），改为显示灰色的「每池 AP 价值」并注明已计入可刷副本",
+      "冠位研鑽战的每局AP价值现在包含无限池折算：每把魔芒石有效掉率 ÷ 每池 600 个 × 每池 AP 价值，悬停可见「直接掉落 + 无限池折算」拆分",
+      "池 AP 价值同样套用全站的「溢出 / 手动禁用」剔除规则；折算系数按魔芒石行实时掉率取值，不再写死 244.84",
+      "AP 排名只在同一活动内的真实可刷副本之间对比（无限池、料理配方等展示/换取卡不参与排名），单副本活动不再显示「AP TOP!」"
+    ]
+  },
+  { v: "1.10.42", date: "2026-11-25",
+    add: [],
+    opt: [],
+    fix: [
+      "修复「用户自定义掉落 → 添加材料」弹窗里大量材料图标空白：DENSE_ORDER 用的是材料全名，之前被直接当成 data.js 的短键（如「虚影之尘」实为「黑灰」）导致取不到图片；现已统一换算成真实键，列表也不再出现同一材料重复两格",
+      "修复由此产生的历史存档：此前通过该弹窗添加的全名材料（无法显示图标、不参与产出计算）自动归一为正确键，重复项取较大值",
+      "没有图标数据的材料（如苹果类）改为显示名称首字的占位块，不再留空"
+    ]
+  },
   { v: "1.10.41", date: "2026-11-25",
     add: [
       "终章新增「柱子剩余数量」板块（位于用户等级·苹果与终章板块之间）：8 根柱子两列展示，静态渐变进度条（左紫右粉、棕色金边外框）+ 粉紫描边剩余数量 + 百分比，顶部显示柱名 / 职阶 / 编号",
