@@ -1171,7 +1171,7 @@ html.light .bfchip.on{background:rgba(180,83,9,.12);}
   <div class="bpage" id="barterSection" style="display:none">
     <div class="bhead">
       <div class="bttl">材料置换<span class="bver" id="barterVer">v0.3</span></div>
-      <p class="bsub">天使的巴扎・以物易物｜同级 1:1，每组每日 5 次（每日 0:00 JST 刷新）<br>
+      <p class="bsub">天使的巴扎・以物易物｜同级 1:1（1 次 = 1 个），每组每日最多 5 次、即最多 5 个（每日 0:00 JST 刷新）<br>
         <span class="mk mk-g"></span>可补缺（付材剩余 ≥5）　<span class="mk mk-o"></span>可补缺但付材剩余 &lt;5　｜　日期为日服实装日期，国服顺延约一年，按「同月同日」对齐即可</p>
     </div>
     <div class="theme-swipes bbackrow">
@@ -6148,8 +6148,8 @@ function barterDeltaOf(k){
     if (i < 0) return;
     const date = id.slice(0, i), idx = parseInt(id.slice(i + 1), 10);
     const r = bRowsOfDate(date)[idx]; if (!r) return;
-    if (r[0] === k) d -= n * 5;
-    if (r[1] === k) d += n * 5;
+    if (r[0] === k) d -= n;   // 每组每天最多 5 次 = 最多 5 个，1 次 = 1 个
+    if (r[1] === k) d += n;
   });
   return d;
 }
