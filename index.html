@@ -6501,6 +6501,12 @@ function actPlanApply(){
   const st = getSettings();
   st.actRuns = d.runs;
   if (d.exchange) st.actExchange = d.exchange;
+  // 方案里出现过的活动组自动打开，否则填了刷取次数却不计入剩余（如冠位戴冠战/南海）
+  try {
+    st.actEnabled = Object.assign({}, st.actEnabled || {});
+    Object.keys(d.runs || {}).forEach(function(g){ st.actEnabled[g] = true; });
+    st.curActGain = true;
+  } catch(e){}
   try { localStorage.setItem(SET_KEY, JSON.stringify(st)); } catch(e){}
   _actPlanData = null;
   try { closeModal(); } catch(e){}
