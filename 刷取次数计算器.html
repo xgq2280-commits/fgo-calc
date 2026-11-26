@@ -2825,10 +2825,30 @@ const EXCHANGE_VOUCHER = {
   "2026-08": ["追忆的贝壳","枯淡勾玉","透镜","英雄之证","髓液"],
   "2026-09": ["鳞粉","冰块","提灯","毒针","不忘灰"],
   "2026-10": ["蛇眼","太阳皮","勋章","龙之牙","凶骨"],
-  "2026-11": ["羽毛","银冠","极光钢","残渣","愚者之锁"]
+  "2026-11": ["羽毛","银冠","极光钢","残渣","愚者之锁"],
+  "2026-12": ["冰块","勋章","小刀","小钟","宵泣之铁桩"],
+  "2027-01": ["羽毛","透镜","银冠","髓液","凶骨"],
+  "2027-02": ["鳞粉","极光钢","书页","不忘灰","英雄之证"],
+  "2027-03": ["神脉灵子","追忆的贝壳","无间齿轮","残渣","愚者之锁"],
+  "2027-04": ["太阳皮","戒指","核桃","毒针","龙之牙"],
+  "2027-05": ["收光体","箭头","马蹄铁","小剑","火药"],
+  "2027-06": ["终之花","线球","生命体","小刀","小钟"],
+  "2027-07": ["魔方体","铃铛","八连双晶","黑灰","宵泣之铁桩"],
+  "2027-08": ["追忆的贝壳","枯淡勾玉","透镜","英雄之证","髓液"],
+  "2027-09": ["鳞粉","冰块","提灯","毒针","不忘灰"],
+  "2027-10": ["蛇眼","太阳皮","勋章","龙之牙","凶骨"],
+  "2027-11": ["羽毛","银冠","极光钢","残渣","愚者之锁"]
 };
 // 当月天数（用于素材交换券数量 = 当月天数 × 4 张/天）
 function monthDays(m){ const p = String(m).split("-").map(Number); return new Date(p[0], p[1], 0).getDate(); }
+// 券只计「未来月」（严格晚于当前月）：已过去的月份券已经体现在 Chaldea 库存里，再算一次就是双计
+function voucherIsFuture(m){
+  const now = new Date();
+  const cy = now.getFullYear(), cm = now.getMonth() + 1;
+  const p = String(m).split("-").map(Number);
+  if (!p[0] || !p[1]) return false;
+  return p[0] > cy || (p[0] === cy && p[1] > cm);
+}
 // 导入 Chaldea 数据文件时记录的素材交换券月度选择（plan.tickets），未导入或兼容旧设置为空
 let importedTickets = null;
 // 素材交换券累计获取：优先从 Chaldea 数据文件 plan.tickets 读取每月兑换的材料；
@@ -2836,9 +2856,24 @@ let importedTickets = null;
 function calcExchange(){
   const act = {};
   const add = (iid, n) => { if (n > 0) act[iid] = (act[iid] || 0) + n; };
+  // 1) 手动规划优先：settings.actExchange = [{mat, m, days?}]，days 缺省 = 当月满额（天数×4）
+  const manual = (getSettings().actExchange || []).filter(en => en && en.mat && en.m);
+  if (manual.length) {
+    manual.forEach(en => {
+      if (!voucherIsFuture(en.m)) return;
+      const iid = CHALDEA_ITEM_ID[en.mat];
+      if (!iid) return;
+      const cap = monthDays(en.m);
+      const d = en.days != null ? Math.max(0, Math.min(cap, parseInt(en.days, 10) || 0)) : cap;
+      add(iid, d * 4);
+    });
+    return act;
+  }
+  // 2) Chaldea 数据文件里的券记录
   if (importedTickets && typeof importedTickets === "object") {
     Object.entries(importedTickets).forEach(([ym, rec]) => {
       const m = ym.length === 6 ? ym.slice(0, 4) + "-" + ym.slice(4) : ym;
+      if (!voucherIsFuture(m)) return;
       const opts = EXCHANGE_VOUCHER[m];
       if (!opts || !rec || !rec.counts) return;
       rec.counts.forEach((n, idx) => {
@@ -2851,12 +2886,31 @@ function calcExchange(){
     });
   } else {
     (getSettings().actExchange || []).forEach(en => {
-      if (!en || !en.mat || !en.m) return;
+      if (!en || !en.mat || !en.m || !voucherIsFuture(en.m)) return;
       const iid = CHALDEA_ITEM_ID[en.mat];
       if (iid) add(iid, monthDays(en.m) * 4);
     });
   }
   return act;
+}
+
+// 券产出缓存（材料名 → 数量）：includedGain 实时并入剩余，不再只在导入 Chaldea 时结算一次
+let EXCH_CACHE = null;
+function rebuildExchCache(){
+  const ex = calcExchange();
+  const nameOf = {};
+  Object.keys(CHALDEA_ITEM_ID).forEach(k => { nameOf[String(CHALDEA_ITEM_ID[k])] = k; });
+  const out = {};
+  Object.entries(ex).forEach(([iid, n]) => {
+    const nm = nameOf[String(iid)];
+    if (nm) out[nm] = (out[nm] || 0) + n;
+  });
+  EXCH_CACHE = out;
+  return out;
+}
+function exchOf(k){
+  if (!EXCH_CACHE) rebuildExchCache();
+  return EXCH_CACHE[k] || 0;
 }
 
 // ===== 无限池（箱抽）奖励 =====
@@ -3144,7 +3198,8 @@ function calcPlanAct(limitEvents){
       Object.entries(grp || {}).forEach(([iid, n]) => add(iid, n));
     });
   });
-  Object.entries(calcExchange()).forEach(([iid, n]) => add(iid, n));
+  // 素材交换券不写进活动列：Chaldea items 库存已含已领取的券，再写一次就是双计
+  // （券统一由 includedGain 实时并入，来源为手动规划 actExchange 或导入的 plan.tickets）
   return act;
 }
 function importChaldea(){
@@ -4309,19 +4364,13 @@ function actDungeons(aid){
   if (aid === "80637") return NAME_DAI_DUNGEONS;
   if (aid === "80639") return PUNI_DUNGEONS;
   if (aid === "coronation") {
-    // 冠位戴冠战：术/剑/狂/弓/枪/骑/杀/ExtraⅠ/ExtraⅡ 已配置（Extra 各 2 副本）
-    const st = getSettings();
-    const cc = st.coronationClass || "saber";
-    if (cc === "caster") return CROWN_CAST_DUNGEONS_NO_MANA;
-    if (cc === "saber") return CROWN_SABER_DUNGEONS;
-    if (cc === "berserker") return CROWN_BERSERKER_DUNGEONS;
-    if (cc === "archer") return CROWN_ARCHER_DUNGEONS;
-    if (cc === "lancer") return CROWN_LANCER_DUNGEONS;
-    if (cc === "rider") return CROWN_RIDER_DUNGEONS;
-    if (cc === "assassin") return CROWN_ASSASSIN_DUNGEONS;
-    if (cc === "extra1") return CROWN_EXTRA1_DUNGEONS;
-    if (cc === "extra2") return CROWN_EXTRA2_DUNGEONS;
-    return null;
+    // 冠位戴冠战：产出按全部职阶合并计算（切换职阶只影响卡片展示，不再让产出随当前职阶丢失）
+    // 各职阶副本 id 唯一；Extra 的火/地双变种共用同一 id，按 id 去重（runs 共享）
+    const all = [], seen = {};
+    [CROWN_CAST_DUNGEONS_NO_MANA, CROWN_SABER_DUNGEONS, CROWN_BERSERKER_DUNGEONS, CROWN_ARCHER_DUNGEONS, CROWN_LANCER_DUNGEONS, CROWN_RIDER_DUNGEONS, CROWN_ASSASSIN_DUNGEONS, CROWN_EXTRA1_DUNGEONS, CROWN_EXTRA2_DUNGEONS].forEach(L => {
+      (L || []).forEach(d => { if (d && !seen[d.id]) { seen[d.id] = 1; all.push(d); } });
+    });
+    return all;
   }
   return null;
 }
@@ -4507,6 +4556,7 @@ function includedGain(key){
   const curIncl = st.curActGain !== false; // 默认开启
   let g = 0;
   ACTIVITIES.forEach(a => { if (en[a.id] || (curIncl && a.id === cur)) g += actGain(a.id, key); });
+  g += exchOf(key); // 素材交换券：实时并入（手动规划优先，其次 Chaldea 记录）
   return g;
 }
 function toggleActMenu(){
@@ -5423,6 +5473,7 @@ function toggleAppleMode(){
 }
 
 function recompute(skipBarter){
+  rebuildExchCache(); // 券随设置实时重算（手动规划改了立刻生效）
   if (!skipBarter) barterRefreshIfOpen();
   const storm = document.getElementById("storm").checked;
   const useAct = getSettings().useAct !== false;
