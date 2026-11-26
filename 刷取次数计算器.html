@@ -2851,46 +2851,40 @@ function voucherIsFuture(m){
 }
 // 导入 Chaldea 数据文件时记录的素材交换券月度选择（plan.tickets），未导入或兼容旧设置为空
 let importedTickets = null;
+// 券规划跟随 Chaldea 数据持久化，刷新页面或换浏览器（云端）重新导入后仍能读到
+try { const _t = localStorage.getItem("fgo_tickets_v1"); if (_t) importedTickets = JSON.parse(_t); } catch (e) {}
 // 素材交换券累计获取：优先从 Chaldea 数据文件 plan.tickets 读取每月兑换的材料；
 // 若未导入数据文件，则回退到旧设置 settings.actExchange（兼容历史手动选择）。
 function calcExchange(){
   const act = {};
   const add = (iid, n) => { if (n > 0) act[iid] = (act[iid] || 0) + n; };
-  // 1) 手动规划优先：settings.actExchange = [{mat, m, days?}]，days 缺省 = 当月满额（天数×4）
-  const manual = (getSettings().actExchange || []).filter(en => en && en.mat && en.m);
-  if (manual.length) {
-    manual.forEach(en => {
-      if (!voucherIsFuture(en.m)) return;
-      const iid = CHALDEA_ITEM_ID[en.mat];
-      if (!iid) return;
-      const cap = monthDays(en.m);
-      const d = en.days != null ? Math.max(0, Math.min(cap, parseInt(en.days, 10) || 0)) : cap;
-      add(iid, d * 4);
-    });
-    return act;
-  }
-  // 2) Chaldea 数据文件里的券记录
-  if (importedTickets && typeof importedTickets === "object") {
+  // 1) 优先用 Chaldea 数据文件里的券规划（plan.tickets）：它就是玩家排好的未来各月兑换，
+  //    counts 非零值 = 当月兑换天数，张数 = 天数 × 4。按规划月份直接计入，不再拿现实日期过滤。
+  if (importedTickets && typeof importedTickets === "object" && Object.keys(importedTickets).length) {
+    let any = false;
     Object.entries(importedTickets).forEach(([ym, rec]) => {
       const m = ym.length === 6 ? ym.slice(0, 4) + "-" + ym.slice(4) : ym;
-      if (!voucherIsFuture(m)) return;
       const opts = EXCHANGE_VOUCHER[m];
       if (!opts || !rec || !rec.counts) return;
       rec.counts.forEach((n, idx) => {
         const mat = opts[idx];
         if (n > 0 && mat) {
           const iid = CHALDEA_ITEM_ID[mat];
-          if (iid) add(iid, n * 4);
+          if (iid) { add(iid, n * 4); any = true; }
         }
       });
     });
-  } else {
-    (getSettings().actExchange || []).forEach(en => {
-      if (!en || !en.mat || !en.m || !voucherIsFuture(en.m)) return;
-      const iid = CHALDEA_ITEM_ID[en.mat];
-      if (iid) add(iid, monthDays(en.m) * 4);
-    });
+    if (any) return act;
   }
+  // 2) 没有数据文件时，回退到设置里的手动规划 settings.actExchange
+  (getSettings().actExchange || []).forEach(en => {
+    if (!en || !en.mat || !en.m) return;
+    const iid = CHALDEA_ITEM_ID[en.mat];
+    if (!iid) return;
+    const cap = monthDays(en.m);
+    const d = en.days != null ? Math.max(0, Math.min(cap, parseInt(en.days, 10) || 0)) : cap;
+    if (d > 0) add(iid, d * 4);
+  });
   return act;
 }
 
@@ -3252,6 +3246,7 @@ function onChaldeaFile(ev){
       const planNeeds = planNo >= 0 && plans[planNo] && plans[planNo].servants
         ? calcPlanNeeds(plans[planNo].servants, u.servants, plans[planNo].classBoards, u.classBoards) : {};
       importedTickets = planNo >= 0 && plans[planNo] ? (plans[planNo].tickets || null) : null;
+      try { if (importedTickets) localStorage.setItem("fgo_tickets_v1", JSON.stringify(importedTickets)); } catch (e) {}
       pendingChaldea.planNo = planNo;
       pendingChaldea.planNeeds = planNeeds;
       pendingChaldea.planAct = planNo >= 0 && plans[planNo] ? calcPlanAct(plans[planNo].limitEvents) : {};
