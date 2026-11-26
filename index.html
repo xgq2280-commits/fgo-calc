@@ -1021,7 +1021,6 @@ html.light .bfchip.on{background:rgba(180,83,9,.12);}
 
   <div class="theme-swipes" id="themeSwipes">
     <button class="swipe-toggle" onclick="openBarter()" title="材料置换：天使的巴扎・以物易物，按日历查看每日配方与定向查询">材料置换</button>
-    <button class="swipe-toggle" onclick="openArchive()" title="存档管理：4 槽位保存/读取方案">存档</button>
     <span class="swipe-right">
     <button class="swipe-toggle" onclick="toggleSwipes()" title="展开/收起白天·夜晚强调色预览">文字配色修改</button>
     <span class="swipe-wrap">
@@ -1039,6 +1038,7 @@ html.light .bfchip.on{background:rgba(180,83,9,.12);}
   <div class="summary">
     <div class="summary-top">
       <span class="total"><span id="dunCount">8</span> 个副本合计需刷 <b id="grandTotal">0</b> 次<span class="apleq" id="grandApples" title="按当前御主等级AP上限折算，全部刷取次数需消耗的金苹果数（40AP/局）">≈ <b>0</b> 金苹果</span><button class="apple-mode-btn" id="appleModeBtn" onclick="toggleAppleMode()" title="切换统计口径：需求=最少还需消耗多少金苹果；剩余=扣除消耗后用户还剩哪些苹果（从金苹果开始扣）">需求</button></span>
+      <button onclick="openArchive()" title="存档管理：4 槽位保存/读取方案">存档</button>
       <button onclick="importChaldea()" title="导入 Chaldea 导出的数据文件（chaldea-userdata-*.json），自动回填各材料库存数量">导入Chaldea数据</button>
       <button onclick="uploadScreens()" title="上传游戏内「持有道具一览」截图，自动识别材料库存数量">上传截图识别库存</button>
       <input type="file" id="chaldeaInput" accept=".json,application/json" style="display:none" onchange="onChaldeaFile(event)">
@@ -6433,6 +6433,7 @@ function actPlanStats(){
 function actPlanExport(){
   const st = getSettings();
   const s = actPlanStats();
+  showToast("正在导出活动规划方案…");
   if (!s.items) {
     openModal('<h3 class="fb-h">导出活动规划</h3><p class="fb-tip">当前还没有填写任何刷取次数。先去各个活动里填好，再回来导出。</p><button class="mclose" onclick="closeModal()">关闭</button>');
     return;
@@ -6449,6 +6450,9 @@ function actPlanExport(){
     document.body.appendChild(a); a.click(); ok = true;
     setTimeout(function(){ try { URL.revokeObjectURL(a.href); } catch(e){} try { a.remove(); } catch(e){} }, 1500);
   } catch(e) { ok = false; }
+  if (ok) {
+    setTimeout(function(){ showToast("已开始下载：活动规划方案.json（在浏览器右上角下载栏可查看进度）"); }, 700);
+  }
   if (!ok) {
     openModal('<h3 class="fb-h">导出活动规划</h3><p class="fb-tip">浏览器拦住了下载，把下面这段复制出来存成 <b>活动规划方案.json</b> 同样能导入。</p>'
       + '<textarea class="bplan-ta" readonly>' + txt.replace(/&/g, "&amp;").replace(/</g, "&lt;") + '</textarea>'
