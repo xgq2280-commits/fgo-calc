@@ -996,6 +996,8 @@ html.light .bfchip.on{background:rgba(180,83,9,.12);}
        AP 价值：每局柱子产出的材料，折算成在<b>普通自由本</b>刷取所需 AP 的总和 = Σ(掉率 × 材料最高效率AP)。点击材料旁的蓝色 AP 值可跳到对应副本。</p>
     <div class="topright">
       <div class="toprow">
+        <button class="iconbtn" onclick="actPlanExport()" title="导出活动规划方案（只含各活动刷取次数与券规划，不含库存）" style="width:auto;padding:0 10px;font-size:12px;font-weight:600">导出规划</button>
+        <button class="iconbtn" onclick="document.getElementById('actPlanFile').click()" title="导入活动规划方案" style="width:auto;padding:0 10px;font-size:12px;font-weight:600">导入规划</button>
         <button class="iconbtn" id="themeBtn" onclick="toggleTheme()" title="切换白天/夜晚模式">
           <svg class="i-sun" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0-5a1 1 0 0 1 1 1v2a1 1 0 1 1-2 0V3a1 1 0 0 1 1-1zm0 16a1 1 0 0 1 1 1v2a1 1 0 1 1-2 0v-2a1 1 0 0 1 1-1zM2 12a1 1 0 0 1 1-1h2a1 1 0 1 1 0 2H3a1 1 0 0 1-1-1zm16 0a1 1 0 0 1 1-1h2a1 1 0 1 1 0 2h-2a1 1 0 0 1-1-1zM4.9 4.9a1 1 0 0 1 1.4 0l1.4 1.4a1 1 0 1 1-1.4 1.4L4.9 6.3a1 1 0 0 1 0-1.4zm11.4 11.4a1 1 0 0 1 1.4 0l1.4 1.4a1 1 0 1 1-1.4 1.4l-1.4-1.4a1 1 0 0 1 0-1.4zM19.1 4.9a1 1 0 0 1 0 1.4l-1.4 1.4a1 1 0 1 1-1.4-1.4l1.4-1.4a1 1 0 0 1 1.4 0zM7.7 16.3a1 1 0 0 1 0 1.4l-1.4 1.4a1 1 0 1 1-1.4-1.4l1.4-1.4a1 1 0 0 1 1.4 0z"/></svg>
           <svg class="i-moon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
@@ -1007,6 +1009,7 @@ html.light .bfchip.on{background:rgba(180,83,9,.12);}
       <button class="fb-btn" onclick="openFeedbackChannel()" title="问题反馈：海外渠道（可科学上网）或国内渠道（问卷，国内直连）">问题反馈</button>
     </div>
   </header>
+  <input type="file" id="actPlanFile" accept=".json,application/json" style="display:none" onchange="actPlanImport(this)">
 
   <div id="fbDevBox" style="display:none">
     <span>反馈提交地址（海外）</span>
@@ -6414,6 +6417,90 @@ function bPlanStats(log){
     pairs++; runs += n; dates[date] = 1; mats[r[0]] = 1; mats[r[1]] = 1;
   });
   return { pairs: pairs, runs: runs, days: Object.keys(dates).length, mats: Object.keys(mats).length };
+}
+// ===== 活动规划方案导出/导入：只含各活动副本刷取次数（st.actRuns）与券规划，不含任何库存 =====
+let _actPlanData = null;
+function actPlanStats(){
+  const st = getSettings(), runs = st.actRuns || {};
+  let total = 0, items = 0, groups = 0;
+  Object.keys(runs).forEach(function(g){
+    let hit = 0;
+    Object.keys(runs[g] || {}).forEach(function(d){ const v = parseInt(runs[g][d], 10); if (v > 0) { total += v; items++; hit++; } });
+    if (hit) groups++;
+  });
+  return { total: total, items: items, groups: groups };
+}
+function actPlanExport(){
+  const st = getSettings();
+  const s = actPlanStats();
+  if (!s.items) {
+    openModal('<h3 class="fb-h">导出活动规划</h3><p class="fb-tip">当前还没有填写任何刷取次数。先去各个活动里填好，再回来导出。</p><button class="mclose" onclick="closeModal()">关闭</button>');
+    return;
+  }
+  const data = { app: "fgo-act-plan", ver: 1, exportedAt: (new Date()).toISOString(),
+                 summary: s, runs: st.actRuns || {}, exchange: st.actExchange || [] };
+  const txt = JSON.stringify(data, null, 2);
+  const name = "活动规划方案.json";
+  let ok = false;
+  try {
+    const blob = new Blob([txt], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); ok = true;
+    setTimeout(function(){ try { URL.revokeObjectURL(a.href); } catch(e){} try { a.remove(); } catch(e){} }, 1500);
+  } catch(e) { ok = false; }
+  if (!ok) {
+    openModal('<h3 class="fb-h">导出活动规划</h3><p class="fb-tip">浏览器拦住了下载，把下面这段复制出来存成 <b>活动规划方案.json</b> 同样能导入。</p>'
+      + '<textarea class="bplan-ta" readonly>' + txt.replace(/&/g, "&amp;").replace(/</g, "&lt;") + '</textarea>'
+      + '<button class="mclose" onclick="closeModal()">关闭</button>');
+  }
+}
+function actPlanImport(inp){
+  const f = inp.files && inp.files[0];
+  inp.value = "";
+  if (!f) return;
+  const rd = new FileReader();
+  rd.onerror = function(){ openModal('<h3 class="fb-h">导入活动规划</h3><p class="fb-tip">读不了这个文件，换一个再试。</p><button class="mclose" onclick="closeModal()">关闭</button>'); };
+  rd.onload = function(){
+    let o = null;
+    try { o = JSON.parse(String(rd.result)); }
+    catch(e) { openModal('<h3 class="fb-h">导入活动规划</h3><p class="fb-tip">这不是有效的 JSON 文件。方案文件由「导出规划」生成，内容以 <b>{&quot;app&quot;:&quot;fgo-act-plan&quot;</b> 开头。</p><button class="mclose" onclick="closeModal()">关闭</button>'); return; }
+    if (!o || o.app !== "fgo-act-plan") { openModal('<h3 class="fb-h">导入活动规划</h3><p class="fb-tip">这不是活动规划方案文件（缺少 app 标记）。</p><button class="mclose" onclick="closeModal()">关闭</button>'); return; }
+    if (!o.runs || typeof o.runs !== "object") { openModal('<h3 class="fb-h">导入活动规划</h3><p class="fb-tip">文件里没有刷取次数段（缺少 runs）。</p><button class="mclose" onclick="closeModal()">关闭</button>'); return; }
+    const clean = {}; let bad = 0, tot = 0;
+    Object.keys(o.runs).forEach(function(g){
+      const src = o.runs[g];
+      if (!src || typeof src !== "object") { bad++; return; }
+      Object.keys(src).forEach(function(d){
+        const n = parseInt(src[d], 10);
+        if (!(n > 0)) { bad++; return; }
+        clean[g] = clean[g] || {};
+        clean[g][d] = n; tot += n;
+      });
+    });
+    if (!tot) { openModal('<h3 class="fb-h">导入活动规划</h3><p class="fb-tip">文件里没有一条有效的刷取次数。</p><button class="mclose" onclick="closeModal()">关闭</button>'); return; }
+    _actPlanData = { runs: clean, exchange: (Array.isArray(o.exchange) && o.exchange.length ? o.exchange : null) };
+    const cur = actPlanStats();
+    const when = o.exportedAt ? String(o.exportedAt).replace("T", " ").replace("Z", "").slice(0, 19) : "未记录";
+    openModal('<h3 class="fb-h">导入活动规划</h3>'
+      + '<div class="bplan-info"><b>' + Object.keys(clean).length + '</b> 组 · 合计 <b>' + tot + '</b> 次刷取</div>'
+      + (bad ? '<div class="bplan-info bplan-warn">已跳过 ' + bad + ' 条无效记录</div>' : "")
+      + '<p class="fb-tip">文件导出时间 ' + when + '；本机现有 <b>' + cur.total + '</b> 次刷取，会被整体替换。<br>'
+      + '这份方案只含各活动各副本的刷取次数和券规划，不含库存，所以应用后会按你当前的库存重新算一遍剩余。</p>'
+      + '<button class="mclose bplan-b" onclick="actPlanApply()">应用并刷新</button><button class="mclose" onclick="closeModal()">取消</button>');
+  };
+  rd.readAsText(f);
+}
+function actPlanApply(){
+  const d = _actPlanData;
+  if (!d) return;
+  const st = getSettings();
+  st.actRuns = d.runs;
+  if (d.exchange) st.actExchange = d.exchange;
+  try { localStorage.setItem(SET_KEY, JSON.stringify(st)); } catch(e){}
+  _actPlanData = null;
+  try { closeModal(); } catch(e){}
+  location.reload();
 }
 function bPlanExport(){
   const st = bPlanStats(barterLog);
