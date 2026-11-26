@@ -1980,7 +1980,7 @@ const MAT_QUALITY = {
   "血泪": 2, "圣水": 2, "黑兽脂": 2, "羽毛": 1, "黄金釜": 2, "混沌爪": 2
 };
 // 版本号：每次功能/修复完成后递增（vX.Y.Z）
-const VERSION = "1.10.47";   // 本地测试期迭代到 1.10.47；同步云端时版本号直接跳到 1.10.47，公告只多 1 条（汇总 42~47）
+const VERSION = "1.10.48";
 const BARTER_VERSION = "0.3";   // 材料置换独立版本号，与活动规划互不影响
 // 材料置换更新记录：本地多轮迭代在同步云端时合并成 1 条（规则见 工作交接.md §10），云端历史只多这一条
 const BARTER_UPDATES = [
@@ -5967,6 +5967,13 @@ function openAuthor(){
 // ===== 版本更新记录（每次「发布版」更新追加一条；本地多次测试迭代合并为发布版一次更新）=====
 // 每条分三类：add 新增 / opt 优化 / fix 修复
 const UPDATES = [
+  { v: "1.10.48", date: "2026-11-27",
+    add: [],
+    opt: ["材料置换：导入/调次数后立即把库存落盘（saveStocks + 自动存档），刷新页面不再回退"],
+    fix: [
+      "修掉「置换看起来生效、刷新后负数全回来」：导入置换方案（或改某组次数）只写了置换日志、没写库存存档，刷新时 loadStocks 用旧库存覆盖，置换收益被冲掉（本地那套因有自动存档侥幸保留，云端必现）"
+    ]
+  },
   { v: "1.10.47", date: "2026-11-26",
     add: [
       "迦勒底南海大作战（80614）：「盛料 → 料理配方」收益并入副本每局AP收益；未填配方次数不计，只折算仍缺的材料",
@@ -6174,6 +6181,8 @@ function barterSetQty(date, idx, n){
   if (n > 0) barterLog[id] = n; else delete barterLog[id];
   barterApplyKey(r[0]); barterApplyKey(r[1]);
   saveBarterLog();
+  try { saveStocks(); } catch(e){}
+  try { scheduleAutoSave(); } catch(e){}
   try { recompute(true); } catch(e){}
   try { buildReg(); buildGems(); buildRegs(); buildOthers(); buildSpec(); } catch(e){}
   bRenderCal();
@@ -6591,6 +6600,9 @@ function bPlanApply(){
   // 3) 以撤销后的库存为基准，按新方案重新扣一遍（同一方案重复导入结果不变）
   Object.keys(ks).forEach(function(k){ barterApplyKey(k); });
   saveBarterLog();
+  // 4) 关键：置换改动的是"库存"，必须落盘，否则刷新时 loadStocks 会把置换收益冲掉（表现为导入后一切正常、刷新后负数全回来了）
+  try { saveStocks(); } catch(e){}
+  try { scheduleAutoSave(); } catch(e){}
   try { recompute(true); } catch(e){}
   try { buildReg(); buildGems(); buildRegs(); buildOthers(); buildSpec(); } catch(e){}
   bRenderCal();
