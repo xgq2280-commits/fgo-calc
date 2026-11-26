@@ -1980,7 +1980,7 @@ const MAT_QUALITY = {
   "血泪": 2, "圣水": 2, "黑兽脂": 2, "羽毛": 1, "黄金釜": 2, "混沌爪": 2
 };
 // 版本号：每次功能/修复完成后递增（vX.Y.Z）
-const VERSION = "1.10.48";
+const VERSION = "1.10.50";
 const BARTER_VERSION = "0.3";   // 材料置换独立版本号，与活动规划互不影响
 // 材料置换更新记录：本地多轮迭代在同步云端时合并成 1 条（规则见 工作交接.md §10），云端历史只多这一条
 const BARTER_UPDATES = [
@@ -2867,6 +2867,8 @@ function calcExchange(){
     let any = false;
     Object.entries(importedTickets).forEach(([ym, rec]) => {
       const m = ym.length === 6 ? ym.slice(0, 4) + "-" + ym.slice(4) : ym;
+      // 只计当前月之后的月份：过去月份的券已经换到手并在库存里，再算一次就是双计
+      if (!voucherIsFuture(m)) return;
       const opts = EXCHANGE_VOUCHER[m];
       if (!opts || !rec || !rec.counts) return;
       rec.counts.forEach((n, idx) => {
@@ -3196,7 +3198,7 @@ function calcPlanAct(limitEvents){
     });
   });
   // 素材交换券不写进活动列：Chaldea items 库存已含已领取的券，再写一次就是双计
-  // （券统一由 includedGain 实时并入，来源为手动规划 actExchange 或导入的 plan.tickets）
+  // 券统一由 includedGain 实时并入剩余（来源为 plan.tickets 的未来月份），口径 = 活动获取 + 券兑换
   return act;
 }
 function importChaldea(){
@@ -4554,7 +4556,7 @@ function includedGain(key){
   const curIncl = st.curActGain !== false; // 默认开启
   let g = 0;
   ACTIVITIES.forEach(a => { if (en[a.id] || (curIncl && a.id === cur)) g += actGain(a.id, key); });
-  g += exchOf(key); // 素材交换券：实时并入（手动规划优先，其次 Chaldea 记录）
+  g += exchOf(key); // 素材交换券（未来月份兑换的期望产出）：与 Chaldea「活动」列的券部分对应，只算一次
   return g;
 }
 function toggleActMenu(){
@@ -5701,11 +5703,15 @@ function recompute(skipBarter){
       // tooltip 显示「刷取产出」按活动拆解（活动名 + 数字，如：终章 262 / 物资 147）
       const redundN = redundOf(m[0]);
       const gd = gainDetail(m[0]);
-      const drop = gd.reduce((s, x) => s + x.gain, 0);
+      const actDrop = gd.reduce((s, x) => s + x.gain, 0);
+      // 素材交换券（未来月份兑换）：与常规材料大表 includedGain 同口径，卡片也必须加，否则靠券补的材料卡片会偏负
+      const exch = (typeof exchOf === "function") ? (exchOf(m[0]) || 0) : 0;
+      const drop = actDrop + exch;
       const fmtDrop = v => m[0] === "量子" ? fmtNum(Math.round(v)) : Math.round(v);
-      const tl = ["剩余 = 库存" + inv + (useAct ? " + 活动" + act : "") + " + 刷取产出" + fmtDrop(drop) + " - 需求" + need + (redundN > 0 ? "（含追加需求 " + redundN + "）" : "")];
+      const tl = ["剩余 = 库存" + inv + (useAct ? " + 活动" + act : "") + " + 刷取产出" + fmtDrop(actDrop) + (exch ? " + 素材交换券" + fmtDrop(exch) : "") + " - 需求" + need + (redundN > 0 ? "（含追加需求 " + redundN + "）" : "")];
       gd.forEach(x => tl.push(x.name + " " + fmtDrop(x.gain)));
-      if (!gd.length) tl.push("（无计入活动的刷取产出）");
+      if (exch) tl.push("素材交换券 " + fmtDrop(exch));
+      if (!gd.length && !exch) tl.push("（无计入活动的刷取产出）");
       const title = tl.join("\n");
       const val = effInv + drop - need;
       m._remain = val;
@@ -5967,6 +5973,16 @@ function openAuthor(){
 // ===== 版本更新记录（每次「发布版」更新追加一条；本地多次测试迭代合并为发布版一次更新）=====
 // 每条分三类：add 新增 / opt 优化 / fix 修复
 const UPDATES = [
+  { v: "1.10.50", date: "2026-11-27",
+    add: [],
+    opt: [
+      "券只计「当前月之后」的月份：过去月份的券已经换到手、在 items 库存里，plan.tickets 就算夹带旧月份也不会再算一遍（防双计）",
+      "副本卡片 tooltip 把「刷取产出」与「素材交换券」分开列，一眼能看出某一格的剩余里券占多少"
+    ],
+    fix: [
+      "副本卡片剩余与常规材料大表差一截（巨人的戒指卡上偏负、大表却是 0）：卡片只算活动刷取产出、没算素材交换券，而大表算了。现在两边同一口径（库存 + 活动 + 刷取产出 + 券 − 需求）"
+    ]
+  },
   { v: "1.10.48", date: "2026-11-27",
     add: [],
     opt: ["材料置换：导入/调次数后立即把库存落盘（saveStocks + 自动存档），刷新页面不再回退"],
