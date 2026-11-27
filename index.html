@@ -1980,7 +1980,7 @@ const MAT_QUALITY = {
   "血泪": 2, "圣水": 2, "黑兽脂": 2, "羽毛": 1, "黄金釜": 2, "混沌爪": 2
 };
 // 版本号：每次功能/修复完成后递增（vX.Y.Z）
-const VERSION = "1.10.50";
+const VERSION = "1.10.51";
 const BARTER_VERSION = "0.3";   // 材料置换独立版本号，与活动规划互不影响
 // 材料置换更新记录：本地多轮迭代在同步云端时合并成 1 条（规则见 工作交接.md §10），云端历史只多这一条
 const BARTER_UPDATES = [
@@ -2867,8 +2867,8 @@ function calcExchange(){
     let any = false;
     Object.entries(importedTickets).forEach(([ym, rec]) => {
       const m = ym.length === 6 ? ym.slice(0, 4) + "-" + ym.slice(4) : ym;
-      // 只计当前月之后的月份：过去月份的券已经换到手并在库存里，再算一次就是双计
-      if (!voucherIsFuture(m)) return;
+      // 券按 Chaldea 规划月份直接计入（plan.tickets 里的月份就是玩家排好的兑换计划，
+      // 包括当月：Chaldea 的 items 库存只含已领取部分，规划月份另计一次不是双计）
       const opts = EXCHANGE_VOUCHER[m];
       if (!opts || !rec || !rec.counts) return;
       rec.counts.forEach((n, idx) => {
@@ -5973,10 +5973,18 @@ function openAuthor(){
 // ===== 版本更新记录（每次「发布版」更新追加一条；本地多次测试迭代合并为发布版一次更新）=====
 // 每条分三类：add 新增 / opt 优化 / fix 修复
 const UPDATES = [
+  { v: "1.10.51", date: "2026-11-27",
+    add: [],
+    opt: [
+      "素材交换券恢复为「按 Chaldea 规划月份全部计入」，含当月：Chaldea 的 items 库存只含已经领取的部分，plan.tickets 里的月份是待兑换计划，按月份计入不算双计"
+    ],
+    fix: [
+      "去掉 1.10.50 引入的「券只算当前月之后」过滤：Chaldea 规划里的当月券（11 月排的 120 个戒指等）被整段丢掉，常规材料大表集体转负（戒指 −136、愚者之锁 −248、鳞粉 −127、箭头 −124 …）"
+    ]
+  },
   { v: "1.10.50", date: "2026-11-27",
     add: [],
     opt: [
-      "券只计「当前月之后」的月份：过去月份的券已经换到手、在 items 库存里，plan.tickets 就算夹带旧月份也不会再算一遍（防双计）",
       "副本卡片 tooltip 把「刷取产出」与「素材交换券」分开列，一眼能看出某一格的剩余里券占多少"
     ],
     fix: [
