@@ -1980,7 +1980,7 @@ const MAT_QUALITY = {
   "血泪": 2, "圣水": 2, "黑兽脂": 2, "羽毛": 1, "黄金釜": 2, "混沌爪": 2
 };
 // 版本号：每次功能/修复完成后递增（vX.Y.Z）
-const VERSION = "1.10.51";
+const VERSION = "1.10.52";
 const BARTER_VERSION = "0.3";   // 材料置换独立版本号，与活动规划互不影响
 // 材料置换更新记录：本地多轮迭代在同步云端时合并成 1 条（规则见 工作交接.md §10），云端历史只多这一条
 const BARTER_UPDATES = [
@@ -5980,6 +5980,15 @@ function openAuthor(){
 // ===== 版本更新记录（每次「发布版」更新追加一条；本地多次测试迭代合并为发布版一次更新）=====
 // 每条分三类：add 新增 / opt 优化 / fix 修复
 const UPDATES = [
+  { v: "1.10.52", date: "2026-11-27",
+    add: [
+      "活动规划方案可以携带「券规划」（与 Chaldea plan.tickets 同构）：导入方案即覆盖券的月度兑换，不用重导 Chaldea 数据，也不会重置库存"
+    ],
+    opt: [
+      "代码内注释写死券的时差口径：tickets 的月份是日服时间轴，国服晚一年（日服 2025-11 = 国服 2026-11），这 13 个月就是国服未来一整年的全部券，禁止按现实日期过滤"
+    ],
+    fix: []
+  },
   { v: "1.10.51", date: "2026-11-27",
     add: [],
     opt: [
@@ -6479,7 +6488,7 @@ function actPlanExport(){
     return;
   }
   const data = { app: "fgo-act-plan", ver: 1, exportedAt: (new Date()).toISOString(),
-                 summary: s, runs: st.actRuns || {}, exchange: st.actExchange || [] };
+                 summary: s, runs: st.actRuns || {}, exchange: st.actExchange || [], tickets: importedTickets || null };
   const txt = JSON.stringify(data, null, 2);
   const name = "活动规划方案.json";
   let ok = false;
@@ -6523,7 +6532,7 @@ function actPlanImport(inp){
       });
     });
     if (!tot) { openModal('<h3 class="fb-h">导入活动规划</h3><p class="fb-tip">文件里没有一条有效的刷取次数。</p><button class="mclose" onclick="closeModal()">关闭</button>'); return; }
-    _actPlanData = { runs: clean, exchange: (Array.isArray(o.exchange) && o.exchange.length ? o.exchange : null) };
+    _actPlanData = { runs: clean, exchange: (Array.isArray(o.exchange) && o.exchange.length ? o.exchange : null), tickets: (o.tickets && typeof o.tickets === "object" && Object.keys(o.tickets).length ? o.tickets : null) };
     const cur = actPlanStats();
     const when = o.exportedAt ? String(o.exportedAt).replace("T", " ").replace("Z", "").slice(0, 19) : "未记录";
     openModal('<h3 class="fb-h">导入活动规划</h3>'
@@ -6541,6 +6550,8 @@ function actPlanApply(){
   const st = getSettings();
   st.actRuns = d.runs;
   if (d.exchange) st.actExchange = d.exchange;
+  // 方案可携带券规划（plan.tickets 同构）：导入即覆盖券口径，不必重导 Chaldea 数据
+  if (d.tickets) { importedTickets = d.tickets; try { localStorage.setItem("fgo_tickets_v1", JSON.stringify(importedTickets)); } catch(e) {} EXCH_CACHE = null; }
   // 方案里出现过的活动组自动打开，否则填了刷取次数却不计入剩余（如冠位戴冠战/南海）
   try {
     st.actEnabled = Object.assign({}, st.actEnabled || {});
